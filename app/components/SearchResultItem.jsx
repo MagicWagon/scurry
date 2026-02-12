@@ -2,7 +2,7 @@ import Image from 'next/image';
 import PropTypes from 'prop-types';
 
 export default function SearchResultItem({ result, onAddItem, selectable = false, selected = false, onSelect }) {
-  const isClickable = selectable || (!selectable && !result.snatched);
+  const isClickable = !result.snatched;
 
   const handleClick = () => {
     if (selectable && onSelect) {
@@ -12,12 +12,12 @@ export default function SearchResultItem({ result, onAddItem, selectable = false
     }
   };
 
-  const borderClasses = selectable
-    ? selected
-      ? 'border-3 border-pink-300 dark:border-pink-600 cursor-pointer'
-      : 'border-2 border-gray-100 dark:border-zinc-700 hover:border-pink-200 dark:hover:border-pink-700 cursor-pointer'
-    : result.snatched
-      ? 'border-2 border-gray-100 dark:border-zinc-700 opacity-50 cursor-not-allowed'
+  const borderClasses = result.snatched
+    ? 'border-2 border-gray-100 dark:border-zinc-700 opacity-50 cursor-not-allowed'
+    : selectable
+      ? selected
+        ? 'border-3 border-pink-300 dark:border-pink-600 cursor-pointer'
+        : 'border-2 border-gray-100 dark:border-zinc-700 hover:border-pink-200 dark:hover:border-pink-700 cursor-pointer'
       : 'border-2 border-gray-100 dark:border-zinc-700 hover:border-pink-200 dark:hover:border-pink-700 cursor-pointer';
 
   return (
