@@ -198,7 +198,7 @@ export default function DownloadReviewModal({
             {/* Tag selection */}
             {tagsEnabled && availableTags.length > 0 && (
               <div className="px-3 py-2 rounded-lg bg-gray-50 dark:bg-zinc-700/50 border border-gray-100 dark:border-zinc-600">
-                <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2">Tags</label>
+                <label className="block text-xs font-medium text-gray-700 dark:text-zinc-300 mb-2">Tags</label>
                 <TagPills
                   availableTags={availableTags}
                   selectedTags={selectedTags}
@@ -300,7 +300,7 @@ function ItemCard({ item, userStats, hasWedges, isDual, label }) {
       {/* Title row with FL Wedge toggle aligned right */}
       <div className="flex items-start gap-2">
         <div className="flex-1 min-w-0">
-          <div className="font-semibold text-gray-900 dark:text-zinc-100 text-sm inline-flex items-center flex-wrap gap-1">
+          <div className="font-semibold text-gray-900 dark:text-zinc-100 text-base inline-flex items-center flex-wrap gap-1">
             {result.vip && (
               <span className="inline-flex">
                 <Image src="/images/vip.png" alt="VIP" width={14} height={14} style={{ height: 14 }} unoptimized />
