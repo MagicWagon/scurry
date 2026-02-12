@@ -195,23 +195,23 @@ export default function DownloadReviewModal({
               />
             ))}
 
-            {/* Projected ratio */}
-            {ratioInfo && (
-              <div className="flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-zinc-700/50 rounded-lg text-sm">
-                <span className="text-gray-600 dark:text-zinc-400">Projected Ratio</span>
-                <span className="font-semibold text-gray-900 dark:text-zinc-100">{ratioInfo.display}</span>
-              </div>
-            )}
-
             {/* Tag selection */}
             {tagsEnabled && availableTags.length > 0 && (
-              <div>
+              <div className="px-3 py-2 rounded-lg bg-gray-50 dark:bg-zinc-700/50 border border-gray-100 dark:border-zinc-600">
                 <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2">Tags</label>
                 <TagPills
                   availableTags={availableTags}
                   selectedTags={selectedTags}
                   onToggleTag={handleToggleTag}
                 />
+              </div>
+            )}
+
+            {/* Ratio impact */}
+            {ratioInfo && (
+              <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 dark:bg-zinc-700/50 border border-gray-100 dark:border-zinc-600 text-sm">
+                <span className="text-gray-600 dark:text-zinc-400">Ratio Impact</span>
+                <span className="font-semibold text-gray-900 dark:text-zinc-100">{ratioInfo.display}</span>
               </div>
             )}
           </div>
