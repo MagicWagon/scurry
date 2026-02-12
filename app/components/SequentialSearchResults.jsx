@@ -71,7 +71,7 @@ export default function SequentialSearchResults({
   const currentStep = selectedBook ? 2 : 1;
 
   return (
-    <div className="mt-6 pb-40">
+    <div className={`mt-6 ${selectedBook && selectedAudiobook ? 'pb-20' : 'pb-36'}`}>
       {/* Mobile bottom sheet with progress indicator and download button */}
       <MobileBottomSheet
         currentStep={currentStep}
