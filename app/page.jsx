@@ -8,8 +8,8 @@ import SearchResultsList from './components/SearchResultsList';
 import DualSearchResultsList from './components/DualSearchResultsList';
 import SequentialSearchResults from './components/SequentialSearchResults';
 import UserStatsBar from './components/UserStatsBar';
+import DownloadReviewModal from './components/DownloadReviewModal';
 
-const DEFAULT_CATEGORY = process.env.NEXT_PUBLIC_DEFAULT_CATEGORY ?? "books";
 const SUCCESS_MESSAGE_DURATION_MS = 5000;
 
 function SearchPage() {
@@ -40,6 +40,13 @@ function SearchPage() {
   const [singleModeWedges, setSingleModeWedges] = useState({}); // { torrentId: boolean }
   const [useAudiobookWedge, setUseAudiobookWedge] = useState(false);
   const [useBookWedge, setUseBookWedge] = useState(false);
+
+  // Settings state (fetched from /api/settings for tag/category config)
+  const [appSettings, setAppSettings] = useState(null);
+
+  // Review modal state
+  const [reviewItems, setReviewItems] = useState(null); // array of { result, category, useWedge, onToggleWedge }
+  const [reviewLoading, setReviewLoading] = useState(false);
 
   // Load saved category from localStorage on mount
   useEffect(() => {
@@ -246,6 +253,18 @@ function SearchPage() {
     }
   }, [mamTokenExists]);
 
+  // Fetch app settings (tags/categories config)
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.ok && data.settings) {
+          setAppSettings(data.settings);
+        }
+      })
+      .catch((err) => console.error('Failed to load settings:', err));
+  }, []);
+
   const fetchUserStats = async () => {
     setStatsLoading(true);
     setStatsError(null);
@@ -266,53 +285,24 @@ function SearchPage() {
     }
   };
 
-  const addItem = useCallback(async (item) => {
-    setMessage(null);
-    try {
-      // Map search category to qBittorrent category
-      const qbCategory = searchCategory === "audiobooks" ? "audiobooks" : "books";
-      
-      // Check if wedge should be used for this item
-      const useWedge = singleModeWedges[item.id] || false;
-      
-      const res = await fetch(`/api/add`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: item.title,
-          downloadUrl: item.downloadUrl,
-          torrentId: item.id,
-          category: qbCategory,
-          useWedge
-        })
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error || "Add failed");
-      
-      setMessage({ 
-        type: "success", 
-        text: `Queued: ${item.title}${useWedge ? ' (FL Wedge applied)' : ''}` 
-      });
-      
-      // Refresh user stats if wedge was used
-      if (useWedge && data.wedgeUsed) {
-        fetchUserStats();
-      }
-      
-      // Clear search and scroll to top
-      setQ("");
-      setResults([]);
-      setSingleModeWedges({});
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      
-      // Remove message after 3 seconds
-      setTimeout(() => {
-        setMessage(null);
-      }, 3000);
-    } catch (err) {
-      setMessage({ type: "error", text: err?.message || "Add failed" });
-    }
-  }, [searchCategory, singleModeWedges, fetchUserStats]);
+  // Single-mode: open review modal instead of downloading directly
+  const openSingleReview = useCallback((item) => {
+    const qbCategory = searchCategory === "audiobooks" ? "audiobooks" : "books";
+    const useWedge = singleModeWedges[item.id] || false;
+    setReviewItems([{
+      result: item,
+      category: qbCategory,
+      useWedge,
+      onToggleWedge: () => {
+        setReviewItems((prev) => {
+          if (!prev) return prev;
+          return prev.map((ri) =>
+            ri.result.id === item.id ? { ...ri, useWedge: !ri.useWedge } : ri
+          );
+        });
+      },
+    }]);
+  }, [searchCategory, singleModeWedges]);
 
   const clearResults = useCallback(() => {
     setResults([]);
@@ -339,110 +329,143 @@ function SearchPage() {
     );
   }, []);
 
-  // Dual download handler
-  const handleDualDownload = useCallback(async () => {
+  // Dual-mode: open review modal with both items
+  const openDualReview = useCallback(() => {
     if (!selectedAudiobook || !selectedBook) return;
-    
-    setDualDownloadLoading(true);
+    setReviewItems([
+      {
+        result: selectedBook,
+        category: 'books',
+        useWedge: useBookWedge,
+        onToggleWedge: () => {
+          setReviewItems((prev) => {
+            if (!prev) return prev;
+            return prev.map((ri) =>
+              ri.category === 'books' ? { ...ri, useWedge: !ri.useWedge } : ri
+            );
+          });
+        },
+      },
+      {
+        result: selectedAudiobook,
+        category: 'audiobooks',
+        useWedge: useAudiobookWedge,
+        onToggleWedge: () => {
+          setReviewItems((prev) => {
+            if (!prev) return prev;
+            return prev.map((ri) =>
+              ri.category === 'audiobooks' ? { ...ri, useWedge: !ri.useWedge } : ri
+            );
+          });
+        },
+      },
+    ]);
+  }, [selectedAudiobook, selectedBook, useAudiobookWedge, useBookWedge]);
+
+  // Review modal: confirm download(s)
+  const handleReviewConfirm = useCallback(async (items, selectedTags) => {
+    setReviewLoading(true);
     setMessage(null);
-    
+
     try {
-      // Download audiobook and book in parallel
-      const [audiobookRes, bookRes] = await Promise.all([
+      const isDual = items.length > 1;
+
+      // Download all items in parallel
+      const fetchPromises = items.map((item) =>
         fetch('/api/add', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            title: selectedAudiobook.title,
-            downloadUrl: selectedAudiobook.downloadUrl,
-            torrentId: selectedAudiobook.id,
-            category: 'audiobooks',
-            useWedge: useAudiobookWedge
-          })
-        }),
-        fetch('/api/add', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: selectedBook.title,
-            downloadUrl: selectedBook.downloadUrl,
-            torrentId: selectedBook.id,
-            category: 'books',
-            useWedge: useBookWedge
-          })
+            title: item.result.title,
+            downloadUrl: item.result.downloadUrl,
+            torrentId: item.result.id,
+            category: item.category,
+            useWedge: item.useWedge,
+            tags: selectedTags,
+          }),
         })
-      ]);
-      
-      // Check results
-      const [audiobookData, bookData] = await Promise.all([
-        audiobookRes.json(),
-        bookRes.json()
-      ]);
-      
-      const audiobookSuccess = audiobookRes.ok && audiobookData.ok;
-      const bookSuccess = bookRes.ok && bookData.ok;
-      
+      );
+
+      const responses = await Promise.all(fetchPromises);
+      const dataList = await Promise.all(responses.map((r) => r.json()));
+
+      // Evaluate results
+      const results = items.map((item, i) => ({
+        item,
+        success: responses[i].ok && dataList[i].ok,
+        error: dataList[i].error,
+        data: dataList[i],
+      }));
+
+      const allSuccess = results.every((r) => r.success);
+      const anyWedgeUsed = results.some((r) => r.item.useWedge && r.success);
+
       // Refresh stats if any wedge was used
-      if ((useAudiobookWedge && audiobookSuccess) || (useBookWedge && bookSuccess)) {
-        fetchUserStats();
-      }
-      
-      if (audiobookSuccess && bookSuccess) {
-        // Both succeeded
-        const wedgeInfo = [];
-        if (useAudiobookWedge) wedgeInfo.push('audiobook FL');
-        if (useBookWedge) wedgeInfo.push('book FL');
+      if (anyWedgeUsed) fetchUserStats();
+
+      if (allSuccess) {
+        const wedgeInfo = results
+          .filter((r) => r.item.useWedge)
+          .map((r) => isDual ? `${r.item.category} FL` : 'FL Wedge');
         const wedgeText = wedgeInfo.length > 0 ? ` (${wedgeInfo.join(', ')} applied)` : '';
-        
-        setMessage({ 
-          type: 'success', 
-          text: `✓ Queued 2 items: ${selectedBook.title} + ${selectedAudiobook.title}${wedgeText}` 
-        });
-        
-        // Clear and reset
+        const tagText = selectedTags.length > 0 ? ` [${selectedTags.join(', ')}]` : '';
+
+        if (isDual) {
+          setMessage({
+            type: 'success',
+            text: `Queued ${items.length} items: ${items.map((i) => i.result.title).join(' + ')}${wedgeText}${tagText}`,
+          });
+        } else {
+          setMessage({
+            type: 'success',
+            text: `Queued: ${items[0].result.title}${wedgeText}${tagText}`,
+          });
+        }
+
+        // Clear search and reset
         setQ('');
+        setResults([]);
         setAudiobookResults([]);
         setBookResults([]);
         setSelectedAudiobook(null);
         setSelectedBook(null);
+        setSingleModeWedges({});
         setUseAudiobookWedge(false);
         setUseBookWedge(false);
+        setReviewItems(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        
+
         setTimeout(() => setMessage(null), SUCCESS_MESSAGE_DURATION_MS);
-        
-      } else if (audiobookSuccess && !bookSuccess) {
-        // Partial success: audiobook ok, book failed
-        setMessage({ 
-          type: 'error', 
-          text: `✓ Audiobook queued successfully. ✗ Book failed: ${bookData.error || 'Unknown error'}` 
-        });
-        // Keep book selection so user can retry
-        setSelectedBook(selectedBook);
-        
-      } else if (!audiobookSuccess && bookSuccess) {
-        // Partial success: book ok, audiobook failed
-        setMessage({ 
-          type: 'error', 
-          text: `✓ Book queued successfully. ✗ Audiobook failed: ${audiobookData.error || 'Unknown error'}` 
-        });
-        // Keep audiobook selection so user can retry
-        setSelectedAudiobook(selectedAudiobook);
-        
       } else {
-        // Both failed
-        throw new Error(`Audiobook: ${audiobookData.error || 'Unknown error'}. Book: ${bookData.error || 'Unknown error'}`);
+        // Partial or full failure
+        const successes = results.filter((r) => r.success);
+        const failures = results.filter((r) => !r.success);
+
+        if (successes.length > 0 && failures.length > 0) {
+          const successText = successes.map((r) => r.item.result.title).join(', ');
+          const failText = failures.map((r) => `${r.item.result.title}: ${r.error || 'Unknown error'}`).join('; ');
+          setMessage({ type: 'error', text: `Queued: ${successText}. Failed: ${failText}` });
+        } else {
+          const failText = failures.map((r) => r.error || 'Unknown error').join('; ');
+          throw new Error(failText);
+        }
+
+        setReviewItems(null);
       }
-      
     } catch (err) {
-      setMessage({ 
-        type: 'error', 
-        text: err?.message || 'Dual download failed' 
-      });
+      setMessage({ type: 'error', text: err?.message || 'Download failed' });
+      setReviewItems(null);
     } finally {
-      setDualDownloadLoading(false);
+      setReviewLoading(false);
     }
-  }, [selectedAudiobook, selectedBook, useAudiobookWedge, useBookWedge, fetchUserStats]);
+  }, [fetchUserStats]);
+
+  // Review modal: cancel
+  const handleReviewCancel = useCallback(() => {
+    if (!reviewLoading) {
+      setReviewItems(null);
+    }
+  }, [reviewLoading]);
 
   // Wedge toggle handlers
   const handleToggleSingleWedge = useCallback((torrentId) => {
@@ -535,7 +558,7 @@ function SearchPage() {
                   onSelectAudiobook={handleSelectAudiobook}
                   onSelectBook={handleSelectBook}
                   loading={loading}
-                  onDownload={handleDualDownload}
+                  onDownload={openDualReview}
                   downloadLoading={dualDownloadLoading}
                   userStats={userStats}
                   useAudiobookWedge={useAudiobookWedge}
@@ -556,7 +579,7 @@ function SearchPage() {
                   onSelectBook={handleSelectBook}
                   loading={loading}
                   userStats={userStats}
-                  onDownload={handleDualDownload}
+                  onDownload={openDualReview}
                   downloadLoading={dualDownloadLoading}
                   useAudiobookWedge={useAudiobookWedge}
                   useBookWedge={useBookWedge}
@@ -568,11 +591,23 @@ function SearchPage() {
           ) : (
             <SearchResultsList
               results={results}
-              onAddItem={addItem}
+              onAddItem={openSingleReview}
               loading={loading}
               userStats={userStats}
               singleModeWedges={singleModeWedges}
               onToggleWedge={handleToggleSingleWedge}
+            />
+          )}
+
+          {/* Download Review Modal */}
+          {reviewItems && (
+            <DownloadReviewModal
+              items={reviewItems}
+              userStats={userStats}
+              settings={appSettings}
+              onConfirm={handleReviewConfirm}
+              onCancel={handleReviewCancel}
+              loading={reviewLoading}
             />
           )}
         </>
