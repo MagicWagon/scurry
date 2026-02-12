@@ -166,7 +166,7 @@ export default function DownloadReviewModal({
             {/* Drag handle on mobile */}
             <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 bg-gray-300 dark:bg-zinc-600 rounded-full md:hidden" />
             <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mt-2 md:mt-0">
-              Review Download{isDual ? 's' : ''}
+              Review Download
             </h2>
             <button
               onClick={onCancel}
@@ -249,7 +249,7 @@ export default function DownloadReviewModal({
                     <polyline points="7 10 12 15 17 10"></polyline>
                     <line x1="12" y1="15" x2="12" y2="3"></line>
                   </svg>
-                  <span>Download{isDual ? 's' : ''}</span>
+                  <span>Download</span>
                 </>
               )}
             </button>
