@@ -300,14 +300,14 @@ function ItemCard({ item, userStats, hasWedges, isDual, label }) {
       {/* Title row with FL Wedge toggle aligned right */}
       <div className="flex items-start gap-2">
         <div className="flex-1 min-w-0">
-          <div className="font-semibold text-gray-900 dark:text-zinc-100 text-base inline-flex items-center flex-wrap gap-1">
+          <div className="font-semibold text-gray-900 dark:text-zinc-100 text-base">
             {result.vip && (
-              <span className="inline-flex">
+              <span className="inline-flex align-middle mr-1">
                 <Image src="/images/vip.png" alt="VIP" width={14} height={14} style={{ height: 14 }} unoptimized />
               </span>
             )}
             {result.freeleech && (
-              <span className="inline-flex">
+              <span className="inline-flex align-middle mr-1">
                 <Image src="/images/freeleech.gif" alt="Freeleech" width={14} height={14} style={{ height: 14 }} unoptimized />
               </span>
             )}
@@ -317,7 +317,7 @@ function ItemCard({ item, userStats, hasWedges, isDual, label }) {
                 href={result.torrentUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex ml-1 hover:text-pink-400 transition-colors duration-200"
+                className="inline-flex align-middle ml-1 hover:text-pink-400 transition-colors duration-200"
                 onClick={(e) => e.stopPropagation()}
                 aria-label="View on MAM"
               >
