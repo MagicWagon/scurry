@@ -1,0 +1,50 @@
+import { NextResponse } from "next/server";
+import { readSettings } from "@/src/lib/settings";
+import { PASSWORD_MASK } from "@/src/lib/constants";
+import { qbLogin } from "@/src/lib/qbittorrent";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+/**
+ * POST /api/settings/test-connection
+ * Tests qBittorrent connection with provided credentials.
+ * If password is the mask string, uses the saved password.
+ */
+export async function POST(req) {
+  try {
+    const body = await req.json();
+    let { url, username, password } = body;
+
+    if (!url?.trim() || !username?.trim() || !password) {
+      return NextResponse.json(
+        { ok: false, error: "URL, username, and password are required" },
+        { status: 400 }
+      );
+    }
+
+    // If password is masked, read the real one from settings
+    if (password === PASSWORD_MASK) {
+      const settings = readSettings();
+      password = settings.qbittorrent.password;
+    }
+
+    // Attempt login
+    const cookie = await qbLogin(url.trim(), username.trim(), password);
+
+    if (cookie) {
+      return NextResponse.json({ ok: true, message: "Connection successful" });
+    }
+
+    return NextResponse.json(
+      { ok: false, error: "Connection failed - no session received" },
+      { status: 500 }
+    );
+  } catch (err) {
+    console.error("qBittorrent connection test failed:", err.message);
+    return NextResponse.json(
+      { ok: false, error: err.message || "Connection test failed" },
+      { status: 500 }
+    );
+  }
+}
