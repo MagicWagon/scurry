@@ -23,8 +23,8 @@ Tracking document for [#26](https://github.com/masonfox/scurry/issues/26)
 ## Phase 3: Review Step (Download Modal/Bottomsheet)
 
 - [x] 3.1 TagPills component (`app/components/TagPills.jsx`)
-- [x] 3.2 ReviewModal for desktop (`app/components/ReviewModal.jsx`)
-- [x] 3.3 ReviewBottomSheet for mobile (`app/components/ReviewBottomSheet.jsx`)
+- [x] 3.2 DownloadReviewModal — responsive (modal on desktop, bottomsheet on mobile) (`app/components/DownloadReviewModal.jsx`)
+- [x] 3.3 ~~Separate ReviewBottomSheet~~ — merged into DownloadReviewModal as responsive component
 - [x] 3.4 Refactor single-mode download flow
 - [x] 3.5 Refactor dual-mode download flow
 - [x] 3.6 Responsive rendering of review step

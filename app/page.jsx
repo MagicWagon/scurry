@@ -35,11 +35,6 @@ function SearchPage() {
   const [selectedAudiobook, setSelectedAudiobook] = useState(null);
   const [selectedBook, setSelectedBook] = useState(null);
   const [dualDownloadLoading, setDualDownloadLoading] = useState(false);
-  
-  // FL Wedge state
-  const [singleModeWedges, setSingleModeWedges] = useState({}); // { torrentId: boolean }
-  const [useAudiobookWedge, setUseAudiobookWedge] = useState(false);
-  const [useBookWedge, setUseBookWedge] = useState(false);
 
   // Settings state (fetched from /api/settings for tag/category config)
   const [appSettings, setAppSettings] = useState(null);
@@ -86,9 +81,6 @@ function SearchPage() {
     setSelectedAudiobook(null);
     setSelectedBook(null);
     setMessage(null);
-    setSingleModeWedges({});
-    setUseAudiobookWedge(false);
-    setUseBookWedge(false);
     
     try {
       // Handle "both" mode with parallel searches
@@ -288,11 +280,10 @@ function SearchPage() {
   // Single-mode: open review modal instead of downloading directly
   const openSingleReview = useCallback((item) => {
     const qbCategory = searchCategory === "audiobooks" ? "audiobooks" : "books";
-    const useWedge = singleModeWedges[item.id] || false;
     setReviewItems([{
       result: item,
       category: qbCategory,
-      useWedge,
+      useWedge: false,
       onToggleWedge: () => {
         setReviewItems((prev) => {
           if (!prev) return prev;
@@ -302,7 +293,7 @@ function SearchPage() {
         });
       },
     }]);
-  }, [searchCategory, singleModeWedges]);
+  }, [searchCategory]);
 
   const clearResults = useCallback(() => {
     setResults([]);
@@ -311,9 +302,6 @@ function SearchPage() {
     setSelectedAudiobook(null);
     setSelectedBook(null);
     setMessage(null);
-    setSingleModeWedges({});
-    setUseAudiobookWedge(false);
-    setUseBookWedge(false);
   }, []);
 
   // Dual-mode selection handlers
@@ -336,7 +324,7 @@ function SearchPage() {
       {
         result: selectedBook,
         category: 'books',
-        useWedge: useBookWedge,
+        useWedge: false,
         onToggleWedge: () => {
           setReviewItems((prev) => {
             if (!prev) return prev;
@@ -349,7 +337,7 @@ function SearchPage() {
       {
         result: selectedAudiobook,
         category: 'audiobooks',
-        useWedge: useAudiobookWedge,
+        useWedge: false,
         onToggleWedge: () => {
           setReviewItems((prev) => {
             if (!prev) return prev;
@@ -360,7 +348,7 @@ function SearchPage() {
         },
       },
     ]);
-  }, [selectedAudiobook, selectedBook, useAudiobookWedge, useBookWedge]);
+  }, [selectedAudiobook, selectedBook]);
 
   // Review modal: confirm download(s)
   const handleReviewConfirm = useCallback(async (items, selectedTags) => {
@@ -429,9 +417,6 @@ function SearchPage() {
         setBookResults([]);
         setSelectedAudiobook(null);
         setSelectedBook(null);
-        setSingleModeWedges({});
-        setUseAudiobookWedge(false);
-        setUseBookWedge(false);
         setReviewItems(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -466,22 +451,6 @@ function SearchPage() {
       setReviewItems(null);
     }
   }, [reviewLoading]);
-
-  // Wedge toggle handlers
-  const handleToggleSingleWedge = useCallback((torrentId) => {
-    setSingleModeWedges(prev => ({
-      ...prev,
-      [torrentId]: !prev[torrentId]
-    }));
-  }, []);
-
-  const handleToggleAudiobookWedge = useCallback(() => {
-    setUseAudiobookWedge(prev => !prev);
-  }, []);
-
-  const handleToggleBookWedge = useCallback(() => {
-    setUseBookWedge(prev => !prev);
-  }, []);
 
   const handleTokenUpdate = (tokenExists) => {
     setMamTokenExists(tokenExists);
@@ -560,11 +529,6 @@ function SearchPage() {
                   loading={loading}
                   onDownload={openDualReview}
                   downloadLoading={dualDownloadLoading}
-                  userStats={userStats}
-                  useAudiobookWedge={useAudiobookWedge}
-                  useBookWedge={useBookWedge}
-                  onToggleAudiobookWedge={handleToggleAudiobookWedge}
-                  onToggleBookWedge={handleToggleBookWedge}
                 />
               </div>
               
@@ -578,13 +542,8 @@ function SearchPage() {
                   onSelectAudiobook={handleSelectAudiobook}
                   onSelectBook={handleSelectBook}
                   loading={loading}
-                  userStats={userStats}
                   onDownload={openDualReview}
                   downloadLoading={dualDownloadLoading}
-                  useAudiobookWedge={useAudiobookWedge}
-                  useBookWedge={useBookWedge}
-                  onToggleAudiobookWedge={handleToggleAudiobookWedge}
-                  onToggleBookWedge={handleToggleBookWedge}
                 />
               </div>
             </>
@@ -593,9 +552,6 @@ function SearchPage() {
               results={results}
               onAddItem={openSingleReview}
               loading={loading}
-              userStats={userStats}
-              singleModeWedges={singleModeWedges}
-              onToggleWedge={handleToggleSingleWedge}
             />
           )}
 

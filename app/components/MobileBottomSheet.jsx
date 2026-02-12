@@ -1,25 +1,14 @@
 import PropTypes from 'prop-types';
-import WedgeToggleButton from './WedgeToggleButton';
 
 export default function MobileBottomSheet({
   currentStep,
   progress,
   bothSelected,
   onDownload,
-  loading,
-  userStats,
-  useAudiobookWedge,
-  useBookWedge,
-  onToggleAudiobookWedge,
-  onToggleBookWedge,
-  selectedBook,
-  selectedAudiobook
+  loading
 }) {
   const disabled = !bothSelected || loading;
-  const hasWedges = userStats?.flWedges > 0;
   const stepText = currentStep === 1 ? 'a Book' : 'an Audiobook';
-  const showBookWedge = selectedBook && !selectedBook.freeleech;
-  const showAudiobookWedge = selectedAudiobook && !selectedAudiobook.freeleech;
 
   return (
     <>
@@ -44,31 +33,6 @@ export default function MobileBottomSheet({
                   className="bg-pink-400 h-2 rounded-full transition-all duration-500 ease-in-out"
                   style={{ width: `${progress}%` }}
                 />
-              </div>
-            </div>
-          )}
-
-          {/* Wedge selector panel (only show when both selected and has wedges) */}
-          {bothSelected && hasWedges && (showBookWedge || showAudiobookWedge) && (
-            <div className="bg-white dark:bg-zinc-800 p-3 rounded-lg border border-gray-200 dark:border-zinc-700">
-              <div className="flex items-center justify-center gap-3">
-                <span className="text-sm text-gray-700 dark:text-zinc-300 font-medium">Use FL Wedge:</span>
-                {showBookWedge && (
-                  <WedgeToggleButton
-                    active={useBookWedge}
-                    onClick={onToggleBookWedge}
-                    label="Book"
-                    size="large"
-                  />
-                )}
-                {showAudiobookWedge && (
-                  <WedgeToggleButton
-                    active={useAudiobookWedge}
-                    onClick={onToggleAudiobookWedge}
-                    label="Audiobook"
-                    size="large"
-                  />
-                )}
               </div>
             </div>
           )}
@@ -113,17 +77,5 @@ MobileBottomSheet.propTypes = {
   progress: PropTypes.number.isRequired,
   bothSelected: PropTypes.bool.isRequired,
   onDownload: PropTypes.func.isRequired,
-  loading: PropTypes.bool.isRequired,
-  userStats: PropTypes.shape({
-    uploaded: PropTypes.string,
-    downloaded: PropTypes.string,
-    ratio: PropTypes.string,
-    flWedges: PropTypes.number
-  }),
-  useAudiobookWedge: PropTypes.bool,
-  useBookWedge: PropTypes.bool,
-  onToggleAudiobookWedge: PropTypes.func,
-  onToggleBookWedge: PropTypes.func,
-  selectedBook: PropTypes.object,
-  selectedAudiobook: PropTypes.object
+  loading: PropTypes.bool.isRequired
 };
