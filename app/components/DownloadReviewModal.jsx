@@ -138,11 +138,11 @@ export default function DownloadReviewModal({
       if (!isFL) bytesForRatio += sizeBytes;
     }
 
-    if (bytesForRatio === 0) return { display: 'No Change' };
+    if (bytesForRatio === 0) return { display: 'No Change', newRatio: null, diff: null };
 
     const newRatio = calculateNewRatio(uploadedBytes, downloadedBytes, bytesForRatio);
     const diff = calculateRatioDiff(uploadedBytes, downloadedBytes, bytesForRatio);
-    return { display: `${newRatio} (${diff})` };
+    return { newRatio, diff };
   };
 
   const ratioInfo = computeRatioInfo();
@@ -211,7 +211,11 @@ export default function DownloadReviewModal({
             {ratioInfo && (
               <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 dark:bg-zinc-700/50 border border-gray-100 dark:border-zinc-600 text-sm">
                 <span className="text-gray-600 dark:text-zinc-400">Ratio Impact</span>
-                <span className="font-semibold text-gray-900 dark:text-zinc-100">{ratioInfo.display}</span>
+                <span className="font-semibold text-gray-900 dark:text-zinc-100">
+                  {ratioInfo.display === 'No Change' ? ratioInfo.display : (
+                    <>{ratioInfo.newRatio} <span className="text-red-500 dark:text-red-400">({ratioInfo.diff})</span></>
+                  )}
+                </span>
               </div>
             )}
           </div>
