@@ -198,7 +198,7 @@ export default function DownloadReviewModal({
             {/* Tag selection */}
             {tagsEnabled && availableTags.length > 0 && (
               <div className="px-3 py-2 rounded-lg bg-gray-50 dark:bg-zinc-700/50 border border-gray-100 dark:border-zinc-600">
-                <label className="block text-xs font-medium text-gray-700 dark:text-zinc-300 mb-2">Tags</label>
+                <label className="block text-xs font-medium text-gray-600 dark:text-zinc-300 mb-2">Tags</label>
                 <TagPills
                   availableTags={availableTags}
                   selectedTags={selectedTags}
@@ -344,30 +344,30 @@ function ItemCard({ item, userStats, hasWedges, isDual, label }) {
 
       {/* Metadata grid */}
       <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-3">
-        <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400">
-          <HardDrive className="w-3.5 h-3.5 flex-shrink-0" />
-          <span>{result.size}</span>
+        <div className="flex items-center gap-1.5 text-xs">
+          <HardDrive className="w-3.5 h-3.5 flex-shrink-0 text-gray-400 dark:text-zinc-500" />
+          <span className="font-medium text-gray-600 dark:text-zinc-300">{result.size}</span>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400">
-          <Users className="w-3.5 h-3.5 flex-shrink-0" />
-          <span>{result.seeders} seeders</span>
+        <div className="flex items-center gap-1.5 text-xs">
+          <Users className="w-3.5 h-3.5 flex-shrink-0 text-gray-400 dark:text-zinc-500" />
+          <span className="font-medium text-gray-600 dark:text-zinc-300">{result.seeders} seeders</span>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400">
-          <Download className="w-3.5 h-3.5 flex-shrink-0" />
-          <span>{result.downloads} downloads</span>
+        <div className="flex items-center gap-1.5 text-xs">
+          <Download className="w-3.5 h-3.5 flex-shrink-0 text-gray-400 dark:text-zinc-500" />
+          <span className="font-medium text-gray-600 dark:text-zinc-300">{result.downloads} downloads</span>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400">
-          <UserMinus className="w-3.5 h-3.5 flex-shrink-0" />
-          <span>{result.leechers} leechers</span>
+        <div className="flex items-center gap-1.5 text-xs">
+          <UserMinus className="w-3.5 h-3.5 flex-shrink-0 text-gray-400 dark:text-zinc-500" />
+          <span className="font-medium text-gray-600 dark:text-zinc-300">{result.leechers} leechers</span>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400">
-          <FileType className="w-3.5 h-3.5 flex-shrink-0" />
-          <span>{result.filetypes}</span>
+        <div className="flex items-center gap-1.5 text-xs">
+          <FileType className="w-3.5 h-3.5 flex-shrink-0 text-gray-400 dark:text-zinc-500" />
+          <span className="font-medium text-gray-600 dark:text-zinc-300">{result.filetypes}</span>
         </div>
         {addedDateDisplay && (
-          <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400">
-            <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
-            <span>{addedDateDisplay}</span>
+          <div className="flex items-center gap-1.5 text-xs">
+            <Calendar className="w-3.5 h-3.5 flex-shrink-0 text-gray-400 dark:text-zinc-500" />
+            <span className="font-medium text-gray-600 dark:text-zinc-300">{addedDateDisplay}</span>
           </div>
         )}
       </div>
