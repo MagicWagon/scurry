@@ -232,7 +232,7 @@ function SettingsPage() {
   return (
     <main className="my-4 p-4 w-full max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex items-center gap-3">
+      <div className="p-7 rounded-lg bg-gray-50 dark:bg-zinc-800 flex items-center gap-3">
         <button
           onClick={() => router.push("/")}
           className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
