@@ -212,7 +212,7 @@ export default function DownloadReviewModal({
               <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 dark:bg-zinc-700/50 border border-gray-100 dark:border-zinc-600 text-sm">
                 <span className="text-gray-600 dark:text-zinc-400">Ratio Impact</span>
                 <span className="font-semibold text-gray-900 dark:text-zinc-100">
-                  {ratioInfo.display === 'No Change' ? ratioInfo.display : (
+                  {ratioInfo.display === 'No Change' ? <span className="text-green-600 dark:text-green-400">{ratioInfo.display}</span> : (
                     <>{ratioInfo.newRatio} <span className="text-red-500 dark:text-red-400">({ratioInfo.diff})</span></>
                   )}
                 </span>
