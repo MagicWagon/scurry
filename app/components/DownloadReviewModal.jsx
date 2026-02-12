@@ -1,9 +1,49 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import PropTypes from 'prop-types';
+import { HardDrive, FileType, Users, UserMinus, Download, Calendar, ExternalLink } from 'lucide-react';
 import TagPills from './TagPills';
 import WedgeToggleButton from './WedgeToggleButton';
 import { parseSizeToBytes, calculateNewRatio, calculateRatioDiff } from '@/src/lib/utilities';
+
+/**
+ * Format a date string (e.g. "2025-09-25") into a readable date with relative time.
+ * Returns something like "Sep 25, 2025 (3mo ago)" or null if the input is falsy/invalid.
+ */
+function formatAddedDate(dateStr) {
+  if (!dateStr) return null;
+  const date = new Date(dateStr + 'T00:00:00');
+  if (isNaN(date.getTime())) return null;
+
+  const formatted = date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+
+  const now = new Date();
+  const diffMs = now - date;
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  let relative;
+  if (diffDays < 0) {
+    relative = 'in the future';
+  } else if (diffDays === 0) {
+    relative = 'today';
+  } else if (diffDays === 1) {
+    relative = '1d ago';
+  } else if (diffDays < 30) {
+    relative = `${diffDays}d ago`;
+  } else if (diffDays < 365) {
+    const months = Math.floor(diffDays / 30);
+    relative = `${months}mo ago`;
+  } else {
+    const years = Math.floor(diffDays / 365);
+    relative = `${years}y ago`;
+  }
+
+  return `${formatted} (${relative})`;
+}
 
 /**
  * DownloadReviewModal — responsive download review step.
@@ -202,7 +242,7 @@ export default function DownloadReviewModal({
                     <polyline points="7 10 12 15 17 10"></polyline>
                     <line x1="12" y1="15" x2="12" y2="3"></line>
                   </svg>
-                  <span>Confirm Download{isDual ? 's' : ''}</span>
+                  <span>Download{isDual ? 's' : ''}</span>
                 </>
               )}
             </button>
@@ -239,6 +279,7 @@ export default function DownloadReviewModal({
 function ItemCard({ item, userStats, hasWedges, isDual, label }) {
   const { result, useWedge, onToggleWedge } = item;
   const showWedgeToggle = hasWedges && !result.snatched && !result.freeleech && !result.vip;
+  const addedDateDisplay = formatAddedDate(result.addedDate);
 
   return (
     <div className="p-3 rounded-lg bg-gray-50 dark:bg-zinc-700/50 border border-gray-100 dark:border-zinc-600">
@@ -249,7 +290,7 @@ function ItemCard({ item, userStats, hasWedges, isDual, label }) {
         </div>
       )}
 
-      {/* Title row */}
+      {/* Title row with FL Wedge toggle aligned right */}
       <div className="flex items-start gap-2">
         <div className="flex-1 min-w-0">
           <div className="font-semibold text-gray-900 dark:text-zinc-100 text-sm inline-flex items-center flex-wrap gap-1">
@@ -264,36 +305,66 @@ function ItemCard({ item, userStats, hasWedges, isDual, label }) {
               </span>
             )}
             <span>{result.title}</span>
+            {result.torrentUrl && (
+              <a
+                href={result.torrentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex ml-1 hover:text-pink-400 transition-colors duration-200"
+                onClick={(e) => e.stopPropagation()}
+                aria-label="View on MAM"
+              >
+                <ExternalLink className="w-3.5 h-3.5 flex-shrink-0 text-gray-400 dark:text-zinc-500 hover:text-pink-400 dark:hover:text-pink-400" />
+              </a>
+            )}
           </div>
           <div className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
             by {result.author}
           </div>
         </div>
-      </div>
 
-      {/* Metadata row */}
-      <div className="flex items-center justify-between mt-2">
-        <div className="text-xs text-gray-500 dark:text-zinc-400">
-          {result.size} &bull; {result.filetypes}
-        </div>
-
-        {/* FL Wedge toggle */}
+        {/* FL Wedge toggle — top-right of card */}
         {showWedgeToggle && (
-          <WedgeToggleButton
-            active={useWedge}
-            onClick={(e) => { e.stopPropagation(); onToggleWedge(); }}
-            label={isDual ? (label || '') : undefined}
-            size={isDual ? 'large' : 'small'}
-          />
+          <div className="flex-shrink-0">
+            <WedgeToggleButton
+              active={useWedge}
+              onClick={(e) => { e.stopPropagation(); onToggleWedge(); }}
+              label={isDual ? (label || '') : undefined}
+              size={isDual ? 'large' : 'small'}
+            />
+          </div>
         )}
       </div>
 
-      {/* Freeleech indicator */}
-      {(result.freeleech || useWedge) && (
-        <div className="mt-1.5 text-xs text-amber-600 dark:text-amber-400 font-medium">
-          {result.freeleech ? 'Freeleech' : 'FL Wedge applied'} — ratio unaffected
+      {/* Metadata grid */}
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-3">
+        <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400">
+          <HardDrive className="w-3.5 h-3.5 flex-shrink-0" />
+          <span>{result.size}</span>
         </div>
-      )}
+        <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400">
+          <FileType className="w-3.5 h-3.5 flex-shrink-0" />
+          <span>{result.filetypes}</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400">
+          <Users className="w-3.5 h-3.5 flex-shrink-0" />
+          <span>{result.seeders} seeders</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400">
+          <UserMinus className="w-3.5 h-3.5 flex-shrink-0" />
+          <span>{result.leechers} leechers</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400">
+          <Download className="w-3.5 h-3.5 flex-shrink-0" />
+          <span>{result.downloads} downloads</span>
+        </div>
+        {addedDateDisplay && (
+          <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400">
+            <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>{addedDateDisplay}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
