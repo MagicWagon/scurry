@@ -22,7 +22,7 @@ export default function SearchResultItem({ result, onAddItem, selectable = false
 
   return (
     <li 
-      className={`px-4 py-3 rounded-md ${borderClasses} mb-4 transition-colors duration-200 relative`}
+      className={`px-4 py-3 rounded-md bg-gray-50 dark:bg-zinc-800 ${borderClasses} mb-4 transition-colors duration-200 relative`}
       onClick={isClickable ? handleClick : undefined}
       role={isClickable ? 'button' : undefined}
       tabIndex={isClickable ? 0 : undefined}
