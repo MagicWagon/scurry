@@ -544,6 +544,7 @@ function SearchPage() {
                   loading={loading}
                   onDownload={openDualReview}
                   downloadLoading={dualDownloadLoading}
+                  hideBottomSheet={!!reviewItems}
                 />
               </div>
             </>
