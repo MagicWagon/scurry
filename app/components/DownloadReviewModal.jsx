@@ -332,7 +332,6 @@ function ItemCard({ item, userStats, hasWedges, isDual, label }) {
             <WedgeToggleButton
               active={useWedge}
               onClick={(e) => { e.stopPropagation(); onToggleWedge(); }}
-              label={isDual ? (label || '') : undefined}
               size={isDual ? 'large' : 'small'}
             />
           </div>
