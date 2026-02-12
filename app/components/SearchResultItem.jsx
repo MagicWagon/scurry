@@ -2,9 +2,13 @@ import Image from 'next/image';
 import PropTypes from 'prop-types';
 
 export default function SearchResultItem({ result, onAddItem, selectable = false, selected = false, onSelect }) {
+  const isClickable = selectable || (!selectable && !result.snatched);
+
   const handleClick = () => {
     if (selectable && onSelect) {
       onSelect(result);
+    } else if (!selectable && onAddItem && !result.snatched) {
+      onAddItem(result);
     }
   };
 
@@ -12,15 +16,17 @@ export default function SearchResultItem({ result, onAddItem, selectable = false
     ? selected
       ? 'border-3 border-pink-300 dark:border-pink-600 cursor-pointer'
       : 'border-2 border-gray-100 dark:border-zinc-700 hover:border-pink-200 dark:hover:border-pink-700 cursor-pointer'
-    : 'border-2 border-gray-100 dark:border-zinc-700 hover:border-pink-200 dark:hover:border-pink-700';
+    : result.snatched
+      ? 'border-2 border-gray-100 dark:border-zinc-700 opacity-50 cursor-not-allowed'
+      : 'border-2 border-gray-100 dark:border-zinc-700 hover:border-pink-200 dark:hover:border-pink-700 cursor-pointer';
 
   return (
     <li 
       className={`px-4 py-3 rounded-md ${borderClasses} mb-4 transition-colors duration-200 relative`}
-      onClick={selectable ? handleClick : undefined}
-      role={selectable ? 'button' : undefined}
-      tabIndex={selectable ? 0 : undefined}
-      onKeyDown={selectable ? (e) => {
+      onClick={isClickable ? handleClick : undefined}
+      role={isClickable ? 'button' : undefined}
+      tabIndex={isClickable ? 0 : undefined}
+      onKeyDown={isClickable ? (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           handleClick();
@@ -93,24 +99,6 @@ export default function SearchResultItem({ result, onAddItem, selectable = false
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
-          </div>
-        )}
-        {/* Download button (single mode only) */}
-        {!selectable && (
-          <div className="flex flex-col gap-2 items-end flex-shrink-0 mt-1 md:mt-0">
-            <button
-              className="rounded-md bg-pink-400 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-pink-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer flex items-center gap-1.5"
-              disabled={result.snatched}
-              onClick={() => onAddItem(result)}
-              aria-label={`Download ${result.title}`}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
-              <span>Download</span>
-            </button>
           </div>
         )}
       </div>
