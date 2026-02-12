@@ -20,7 +20,7 @@ vi.mock('../src/lib/wedge', () => ({
 vi.mock('../src/lib/settings', () => ({
   readSettings: vi.fn(() => ({
     qbittorrent: { url: 'http://qb', username: 'user', password: 'pass' },
-    tags: { enabled: false, available: [], defaults: { books: '', audiobooks: '' } },
+    tags: { enabled: false, available: [], defaults: { books: [], audiobooks: [] } },
     categories: { enabled: false, defaults: { books: 'books', audiobooks: 'audiobooks' } }
   }))
 }));
@@ -33,7 +33,7 @@ describe('add route', () => {
     // Reset to default settings (categories and tags disabled)
     settingsMod.readSettings.mockReturnValue({
       qbittorrent: { url: 'http://qb', username: 'user', password: 'pass' },
-      tags: { enabled: false, available: [], defaults: { books: '', audiobooks: '' } },
+      tags: { enabled: false, available: [], defaults: { books: [], audiobooks: [] } },
       categories: { enabled: false, defaults: { books: 'books', audiobooks: 'audiobooks' } }
     });
   });
@@ -97,7 +97,7 @@ describe('add route', () => {
     it('passes tags when tags are enabled in settings', async () => {
       settingsMod.readSettings.mockReturnValue({
         qbittorrent: { url: 'http://qb', username: 'user', password: 'pass' },
-        tags: { enabled: true, available: ['fiction', 'favorites'], defaults: { books: '', audiobooks: '' } },
+        tags: { enabled: true, available: ['fiction', 'favorites'], defaults: { books: [], audiobooks: [] } },
         categories: { enabled: false, defaults: { books: 'books', audiobooks: 'audiobooks' } }
       });
 
@@ -141,7 +141,7 @@ describe('add route', () => {
     it('passes category when categories are enabled', async () => {
       settingsMod.readSettings.mockReturnValue({
         qbittorrent: { url: 'http://qb', username: 'user', password: 'pass' },
-        tags: { enabled: false, available: [], defaults: { books: '', audiobooks: '' } },
+        tags: { enabled: false, available: [], defaults: { books: [], audiobooks: [] } },
         categories: { enabled: true, defaults: { books: 'books', audiobooks: 'audiobooks' } }
       });
 
@@ -188,7 +188,7 @@ describe('add route', () => {
       vi.clearAllMocks();
       settingsMod.readSettings.mockReturnValue({
         qbittorrent: { url: 'http://qb', username: 'user', password: 'pass' },
-        tags: { enabled: false, available: [], defaults: { books: '', audiobooks: '' } },
+        tags: { enabled: false, available: [], defaults: { books: [], audiobooks: [] } },
         categories: { enabled: false, defaults: { books: 'books', audiobooks: 'audiobooks' } }
       });
     });

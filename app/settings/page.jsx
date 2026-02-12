@@ -33,8 +33,8 @@ function SettingsPage() {
   const [tagsEnabled, setTagsEnabled] = useState(false);
   const [availableTags, setAvailableTags] = useState([]);
   const [newTagInput, setNewTagInput] = useState("");
-  const [defaultBookTag, setDefaultBookTag] = useState("");
-  const [defaultAudiobookTag, setDefaultAudiobookTag] = useState("");
+  const [defaultBookTags, setDefaultBookTags] = useState([]);
+  const [defaultAudiobookTags, setDefaultAudiobookTags] = useState([]);
 
   // Categories form state
   const [categoriesEnabled, setCategoriesEnabled] = useState(false);
@@ -53,8 +53,8 @@ function SettingsPage() {
         setQbPassword(data.settings.qbittorrent?.password || "");
         setTagsEnabled(data.settings.tags?.enabled || false);
         setAvailableTags(data.settings.tags?.available || []);
-        setDefaultBookTag(data.settings.tags?.defaults?.books || "");
-        setDefaultAudiobookTag(data.settings.tags?.defaults?.audiobooks || "");
+        setDefaultBookTags(Array.isArray(data.settings.tags?.defaults?.books) ? data.settings.tags.defaults.books : []);
+        setDefaultAudiobookTags(Array.isArray(data.settings.tags?.defaults?.audiobooks) ? data.settings.tags.defaults.audiobooks : []);
         setCategoriesEnabled(data.settings.categories?.enabled || false);
         setDefaultBookCategory(data.settings.categories?.defaults?.books || "books");
         setDefaultAudiobookCategory(data.settings.categories?.defaults?.audiobooks || "audiobooks");
@@ -160,8 +160,8 @@ function SettingsPage() {
   const handleRemoveTag = (tag) => {
     setAvailableTags(availableTags.filter((t) => t !== tag));
     // Clear defaults if they reference the removed tag
-    if (defaultBookTag === tag) setDefaultBookTag("");
-    if (defaultAudiobookTag === tag) setDefaultAudiobookTag("");
+    setDefaultBookTags((prev) => prev.filter((t) => t !== tag));
+    setDefaultAudiobookTags((prev) => prev.filter((t) => t !== tag));
   };
 
   const handleSaveTags = () => {
@@ -171,8 +171,8 @@ function SettingsPage() {
         enabled: tagsEnabled,
         available: availableTags,
         defaults: {
-          books: defaultBookTag,
-          audiobooks: defaultAudiobookTag,
+          books: defaultBookTags,
+          audiobooks: defaultAudiobookTags,
         },
       },
     });
@@ -202,8 +202,8 @@ function SettingsPage() {
       enabled: tagsEnabled,
       available: availableTags,
       defaults: {
-        books: defaultBookTag,
-        audiobooks: defaultAudiobookTag,
+        books: defaultBookTags,
+        audiobooks: defaultAudiobookTags,
       },
     },
     categories: {
@@ -436,70 +436,75 @@ function SettingsPage() {
                   </div>
                 </div>
 
-                {/* Tag pills */}
+                {/* Tag list */}
                 {availableTags.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {availableTags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-400 rounded-full text-sm border border-pink-200 dark:border-pink-800/40"
-                      >
-                        {tag}
-                        <button
-                          onClick={() => handleRemoveTag(tag)}
-                          className="p-0.5 rounded-full hover:bg-pink-200 dark:hover:bg-pink-800/40 transition-colors cursor-pointer"
-                          aria-label={`Remove tag: ${tag}`}
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                          </svg>
-                        </button>
-                      </span>
-                    ))}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-sm font-medium text-gray-700 dark:text-zinc-300 flex-1">Tag</span>
+                      <span className="text-xs font-medium text-gray-500 dark:text-zinc-400 w-20 text-center">Books</span>
+                      <span className="text-xs font-medium text-gray-500 dark:text-zinc-400 w-20 text-center">Audiobooks</span>
+                      <span className="w-8" />
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400 -mt-1 mb-3">Toggle defaults to pre-select tags when downloading a torrent of the corresponding type.</p>
+                    <div className="space-y-1">
+                      {availableTags.map((tag) => {
+                        const isBookDefault = defaultBookTags.includes(tag);
+                        const isAudiobookDefault = defaultAudiobookTags.includes(tag);
+                        return (
+                          <div
+                            key={tag}
+                            className="flex items-center gap-2 p-2.5 rounded-md bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700"
+                          >
+                            <span className="flex-1 text-sm text-gray-900 dark:text-zinc-100 truncate">{tag}</span>
+                            <div className="w-20 flex justify-center">
+                              <button
+                                onClick={() => setDefaultBookTags((prev) => prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag])}
+                                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${
+                                  isBookDefault ? "bg-pink-400" : "bg-gray-300 dark:bg-zinc-600"
+                                }`}
+                                role="switch"
+                                aria-checked={isBookDefault}
+                                aria-label={`Default for books: ${tag}`}
+                              >
+                                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                                  isBookDefault ? "translate-x-[18px]" : "translate-x-[3px]"
+                                }`} />
+                              </button>
+                            </div>
+                            <div className="w-20 flex justify-center">
+                              <button
+                                onClick={() => setDefaultAudiobookTags((prev) => prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag])}
+                                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${
+                                  isAudiobookDefault ? "bg-pink-400" : "bg-gray-300 dark:bg-zinc-600"
+                                }`}
+                                role="switch"
+                                aria-checked={isAudiobookDefault}
+                                aria-label={`Default for audiobooks: ${tag}`}
+                              >
+                                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                                  isAudiobookDefault ? "translate-x-[18px]" : "translate-x-[3px]"
+                                }`} />
+                              </button>
+                            </div>
+                            <button
+                              onClick={() => handleRemoveTag(tag)}
+                              className="w-8 flex justify-center p-1 rounded-md hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer text-gray-400 dark:text-zinc-500 hover:text-red-500 dark:hover:text-red-400"
+                              aria-label={`Remove tag: ${tag}`}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                              </svg>
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
 
                 {availableTags.length === 0 && (
                   <p className="text-sm text-gray-400 dark:text-zinc-500 italic">No tags configured yet. Add your first tag above.</p>
-                )}
-
-                {/* Default tag per medium */}
-                {availableTags.length > 0 && (
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-gray-700 dark:text-zinc-300">Default Tags</h3>
-                    <p className="text-xs text-gray-500 dark:text-zinc-400 -mt-2">These tags will be pre-selected when downloading a torrent of the corresponding type.</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="default-book-tag" className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Books</label>
-                        <select
-                          id="default-book-tag"
-                          value={defaultBookTag}
-                          onChange={(e) => setDefaultBookTag(e.target.value)}
-                          className="w-full p-2.5 border border-gray-300 dark:border-zinc-600 rounded-md bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-pink-200 dark:focus:ring-pink-800 text-sm"
-                        >
-                          <option value="">None</option>
-                          {availableTags.map((tag) => (
-                            <option key={tag} value={tag}>{tag}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label htmlFor="default-audiobook-tag" className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Audiobooks</label>
-                        <select
-                          id="default-audiobook-tag"
-                          value={defaultAudiobookTag}
-                          onChange={(e) => setDefaultAudiobookTag(e.target.value)}
-                          className="w-full p-2.5 border border-gray-300 dark:border-zinc-600 rounded-md bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-pink-200 dark:focus:ring-pink-800 text-sm"
-                        >
-                          <option value="">None</option>
-                          {availableTags.map((tag) => (
-                            <option key={tag} value={tag}>{tag}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
                 )}
               </>
             )}

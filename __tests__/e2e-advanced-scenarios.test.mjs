@@ -22,7 +22,7 @@ vi.mock('../src/lib/qbittorrent', () => ({
 vi.mock('../src/lib/settings', () => ({
   readSettings: vi.fn(() => ({
     qbittorrent: { url: 'http://localhost:8080', username: 'testuser', password: 'testpass' },
-    tags: { enabled: false, available: [], defaults: { books: '', audiobooks: '' } },
+    tags: { enabled: false, available: [], defaults: { books: [], audiobooks: [] } },
     categories: { enabled: false, defaults: { books: 'books', audiobooks: 'audiobooks' } },
   })),
 }));

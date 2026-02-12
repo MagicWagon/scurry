@@ -18,8 +18,8 @@ export function getDefaults() {
       enabled: false,
       available: [],
       defaults: {
-        books: "",
-        audiobooks: "",
+        books: [],
+        audiobooks: [],
       },
     },
     categories: {
@@ -132,9 +132,18 @@ export function validateSettings(settings) {
     if (settings.tags.defaults) {
       const available = settings.tags.available || [];
       for (const medium of ["books", "audiobooks"]) {
-        const def = settings.tags.defaults[medium];
-        if (def && !available.includes(def)) {
-          errors.push(`Default tag "${def}" for ${medium} is not in available tags`);
+        const defs = settings.tags.defaults[medium];
+        if (Array.isArray(defs)) {
+          for (const def of defs) {
+            if (def && !available.includes(def)) {
+              errors.push(`Default tag "${def}" for ${medium} is not in available tags`);
+            }
+          }
+        } else if (defs && typeof defs === "string") {
+          // Legacy single-string format
+          if (!available.includes(defs)) {
+            errors.push(`Default tag "${defs}" for ${medium} is not in available tags`);
+          }
         }
       }
     }

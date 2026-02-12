@@ -78,9 +78,12 @@ export default function DownloadReviewModal({
     const defaultSet = new Set();
     for (const item of items) {
       const cat = item.category || '';
-      const def = defaults[cat] || '';
-      if (def && availableTags.includes(def)) {
-        defaultSet.add(def);
+      const defs = defaults[cat] || [];
+      const defList = Array.isArray(defs) ? defs : [];
+      for (const def of defList) {
+        if (def && availableTags.includes(def)) {
+          defaultSet.add(def);
+        }
       }
     }
     return [...defaultSet];
