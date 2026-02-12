@@ -346,20 +346,20 @@ function ItemCard({ item, userStats, hasWedges, isDual, label }) {
           <span>{result.size}</span>
         </div>
         <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400">
-          <FileType className="w-3.5 h-3.5 flex-shrink-0" />
-          <span>{result.filetypes}</span>
-        </div>
-        <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400">
           <Users className="w-3.5 h-3.5 flex-shrink-0" />
           <span>{result.seeders} seeders</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400">
+          <Download className="w-3.5 h-3.5 flex-shrink-0" />
+          <span>{result.downloads} downloads</span>
         </div>
         <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400">
           <UserMinus className="w-3.5 h-3.5 flex-shrink-0" />
           <span>{result.leechers} leechers</span>
         </div>
         <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400">
-          <Download className="w-3.5 h-3.5 flex-shrink-0" />
-          <span>{result.downloads} downloads</span>
+          <FileType className="w-3.5 h-3.5 flex-shrink-0" />
+          <span>{result.filetypes}</span>
         </div>
         {addedDateDisplay && (
           <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400">
