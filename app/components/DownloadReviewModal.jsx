@@ -317,7 +317,7 @@ function ItemCard({ item, userStats, hasWedges, isDual, label }) {
                 href={result.torrentUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex align-middle ml-1 hover:text-pink-400 transition-colors duration-200"
+                className="inline-flex align-start ml-1 hover:text-pink-400 transition-colors duration-200"
                 onClick={(e) => e.stopPropagation()}
                 aria-label="View on MAM"
               >
