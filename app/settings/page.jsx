@@ -1,9 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import Image from "next/image";
 import TokenManager from "../components/TokenManager";
-import ThemeToggle from "../components/ThemeToggle";
 
 const TABS = [
   { id: "qbittorrent", label: "qBittorrent" },
@@ -234,36 +232,18 @@ function SettingsPage() {
   return (
     <main className="my-4 p-4 w-full max-w-4xl mx-auto">
       {/* Header */}
-      <div className="p-7 rounded-lg bg-gray-50 dark:bg-zinc-800">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.push("/")}
-              className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
-              aria-label="Back to search"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-zinc-400">
-                <path d="M19 12H5"></path>
-                <polyline points="12 19 5 12 12 5"></polyline>
-              </svg>
-            </button>
-            <h1 className="text-2xl font-bold flex items-center">
-              <span className="mr-2">
-                <Image
-                  src="/images/logo.png"
-                  alt="Scurry Logo"
-                  width={28}
-                  height={28}
-                  style={{ display: "inline", verticalAlign: "middle", height: 28 }}
-                  priority
-                  unoptimized
-                />
-              </span>
-              <span className="text-gray-800 dark:text-zinc-100">Settings</span>
-            </h1>
-          </div>
-          <ThemeToggle />
-        </div>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => router.push("/")}
+          className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+          aria-label="Back to search"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-zinc-400">
+            <path d="M19 12H5"></path>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+        </button>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-zinc-100">Settings</h1>
       </div>
 
       {/* Tab Navigation */}
