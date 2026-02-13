@@ -82,7 +82,7 @@ export function writeSettings(settings) {
     settings.qbittorrent.password = existing.qbittorrent.password;
   }
 
-  // Ensure the secrets directory exists
+  // Ensure the config directory exists
   const dir = SETTINGS_FILE.substring(0, SETTINGS_FILE.lastIndexOf("/"));
   if (dir && !fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
