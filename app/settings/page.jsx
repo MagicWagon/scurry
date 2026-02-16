@@ -231,24 +231,24 @@ function SettingsPage() {
 
   return (
     <main className="my-4 p-4 w-full max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="p-7 rounded-lg bg-gray-50 dark:bg-zinc-800 flex items-center gap-3">
-        <button
-          onClick={() => router.push("/")}
-          className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
-          aria-label="Back to search"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-zinc-400">
-            <path d="M19 12H5"></path>
-            <polyline points="12 19 5 12 12 5"></polyline>
-          </svg>
-        </button>
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-zinc-100">Settings</h1>
-      </div>
+      {/* Header with integrated navigation */}
+      <div className="rounded-lg bg-gray-50 dark:bg-zinc-800 overflow-hidden">
+        <div className="p-7 pb-0 flex items-center gap-3">
+          <button
+            onClick={() => router.push("/")}
+            className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+            aria-label="Back to search"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-zinc-400">
+              <path d="M19 12H5"></path>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+          </button>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-zinc-100">Settings</h1>
+        </div>
 
-      {/* Tab Navigation */}
-      <div className="mt-6 border-b border-gray-200 dark:border-zinc-700">
-        <nav className="flex gap-0 -mb-px overflow-x-auto" aria-label="Settings tabs">
+        {/* Tab Navigation */}
+        <nav className="flex gap-0 px-7 mt-5" aria-label="Settings tabs">
           {TABS.map((tab) => (
             <button
               key={tab.id}
