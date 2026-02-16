@@ -419,13 +419,16 @@ function SettingsPage() {
                 {/* Tag list */}
                 {availableTags.length > 0 && (
                   <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2">
+                      Tag Defaults
+                    </label>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400 mb-3">Toggle defaults to pre-select tags when downloading a torrent of the corresponding type.</p>
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm font-medium text-gray-700 dark:text-zinc-300 flex-1">Tag</span>
-                      <span className="text-xs font-medium text-gray-500 dark:text-zinc-400 w-20 text-center">Books</span>
-                      <span className="text-xs font-medium text-gray-500 dark:text-zinc-400 w-20 text-center">Audiobooks</span>
+                      <span className="text-xs font-medium text-gray-500 dark:text-zinc-400 flex-1">Tag</span>
+                      <span className="text-xs font-medium text-gray-500 dark:text-zinc-400 w-17">Books</span>
+                      <span className="text-xs font-medium text-gray-500 dark:text-zinc-400 w-20">Audiobooks</span>
                       <span className="w-8" />
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-zinc-400 -mt-1 mb-3">Toggle defaults to pre-select tags when downloading a torrent of the corresponding type.</p>
                     <div className="space-y-1">
                       {availableTags.map((tag) => {
                         const isBookDefault = defaultBookTags.includes(tag);
