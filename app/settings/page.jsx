@@ -343,7 +343,7 @@ function SettingsPage() {
               </div>
             )}
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 justify-end">
               <button
                 onClick={handleTestConnection}
                 disabled={testingConnection || !qbUrl.trim() || !qbUsername.trim()}
@@ -492,7 +492,7 @@ function SettingsPage() {
               </>
             )}
 
-            <div>
+            <div className="flex justify-end">
               <button
                 onClick={handleSaveTags}
                 disabled={saving}
@@ -562,7 +562,7 @@ function SettingsPage() {
               </div>
             )}
 
-            <div>
+            <div className="flex justify-end">
               <button
                 onClick={handleSaveCategories}
                 disabled={saving}
