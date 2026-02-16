@@ -5,7 +5,8 @@ export default function MobileBottomSheet({
   progress,
   bothSelected,
   onDownload,
-  loading
+  loading,
+  hidden = false
 }) {
   const disabled = !bothSelected || loading;
   const stepText = currentStep === 1 ? 'a Book' : 'an Audiobook';
@@ -13,10 +14,16 @@ export default function MobileBottomSheet({
   return (
     <>
       {/* Backdrop */}
-      <div className={`fixed bottom-0 left-0 right-0 ${bothSelected ? 'h-20' : 'h-36'} bg-white dark:bg-zinc-900 rounded-xl z-40 border-t border-gray-200 dark:border-zinc-700 transition-all duration-300`}></div>
+      <div 
+        className={`fixed bottom-0 left-0 right-0 ${bothSelected ? 'h-20' : 'h-36'} bg-white dark:bg-zinc-900 rounded-xl z-40 border-t border-gray-200 dark:border-zinc-700 transition-all duration-300 ease-out ${
+          hidden ? 'translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
+        }`}
+      ></div>
 
       {/* Content container - single fixed element */}
-      <div className="fixed bottom-3 left-4 right-4 z-[100] pointer-events-none">
+      <div className={`fixed bottom-3 left-4 right-4 z-[100] transition-all duration-300 ease-out ${
+        hidden ? 'translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100 pointer-events-none'
+      }`}>
         <div className="pointer-events-auto space-y-2">
           {/* Progress indicator (only show when not both selected) */}
           {!bothSelected && (
@@ -70,5 +77,6 @@ MobileBottomSheet.propTypes = {
   progress: PropTypes.number.isRequired,
   bothSelected: PropTypes.bool.isRequired,
   onDownload: PropTypes.func.isRequired,
-  loading: PropTypes.bool.isRequired
+  loading: PropTypes.bool.isRequired,
+  hidden: PropTypes.bool
 };

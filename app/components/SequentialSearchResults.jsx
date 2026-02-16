@@ -74,15 +74,14 @@ export default function SequentialSearchResults({
   return (
     <div className={`mt-6 ${selectedBook && selectedAudiobook ? 'pb-20' : 'pb-36'}`}>
       {/* Mobile bottom sheet with progress indicator and download button */}
-      {!hideBottomSheet && (
-        <MobileBottomSheet
-          currentStep={currentStep}
-          progress={progress}
-          bothSelected={!!(selectedBook && selectedAudiobook)}
-          onDownload={onDownload}
-          loading={downloadLoading}
-        />
-      )}
+      <MobileBottomSheet
+        currentStep={currentStep}
+        progress={progress}
+        bothSelected={!!(selectedBook && selectedAudiobook)}
+        onDownload={onDownload}
+        loading={downloadLoading}
+        hidden={hideBottomSheet}
+      />
 
       {/* Step 1: Book Selection */}
       <div ref={bookSectionRef} className={selectedBook ? 'mb-6' : ''}>

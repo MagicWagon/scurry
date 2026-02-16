@@ -90,16 +90,20 @@ export default function DownloadReviewModal({
   }, [tagsEnabled, availableTags, settings, items]);
 
   const [selectedTags, setSelectedTags] = useState(getDefaultTags);
+  const [isClosing, setIsClosing] = useState(false);
   const backdropRef = useRef(null);
+  const panelRef = useRef(null);
 
   // Close on Escape key
   useEffect(() => {
     const handleEsc = (e) => {
-      if (e.key === 'Escape' && !loading) onCancel();
+      if (e.key === 'Escape' && !loading && !isClosing) {
+        handleClose();
+      }
     };
     document.addEventListener('keydown', handleEsc);
     return () => document.removeEventListener('keydown', handleEsc);
-  }, [onCancel, loading]);
+  }, [loading, isClosing]);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -117,8 +121,21 @@ export default function DownloadReviewModal({
     onConfirm(items, selectedTags);
   };
 
+  const handleClose = () => {
+    if (loading || isClosing) return;
+    setIsClosing(true);
+  };
+
+  const handleAnimationEnd = () => {
+    if (isClosing) {
+      onCancel();
+    }
+  };
+
   const handleBackdropClick = (e) => {
-    if (e.target === backdropRef.current && !loading) onCancel();
+    if (e.target === backdropRef.current && !loading && !isClosing) {
+      handleClose();
+    }
   };
 
   const isDual = items.length > 1;
@@ -154,13 +171,23 @@ export default function DownloadReviewModal({
       <div
         ref={backdropRef}
         onClick={handleBackdropClick}
-        className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm"
+        className={`fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm ${
+          isClosing ? 'animate-[backdrop-fade-out_0.2s_ease-out_forwards]' : 'animate-[backdrop-fade-in_0.2s_ease-out_forwards]'
+        }`}
         role="dialog"
         aria-modal="true"
         aria-label="Download review"
       >
         {/* Panel */}
-        <div className="w-full md:w-auto md:min-w-[480px] md:max-w-lg bg-white dark:bg-zinc-800 rounded-t-2xl md:rounded-xl shadow-xl max-h-[85vh] md:max-h-[80vh] overflow-y-auto animate-in">
+        <div 
+          ref={panelRef}
+          onAnimationEnd={handleAnimationEnd}
+          className={`w-full md:w-auto md:min-w-[480px] md:max-w-lg bg-white dark:bg-zinc-800 rounded-t-2xl md:rounded-xl shadow-xl max-h-[85vh] md:max-h-[80vh] overflow-y-auto ${
+            isClosing
+              ? 'animate-[modal-slide-down_0.25s_ease-out_forwards] md:animate-[modal-fade-scale-out_0.2s_ease-out_forwards]'
+              : 'animate-[modal-slide-up_0.25s_ease-out_forwards] md:animate-[modal-fade-scale-in_0.2s_ease-out_forwards]'
+          }`}
+        >
           {/* Header */}
           <div className="sticky top-0 bg-white dark:bg-zinc-800 p-4 pb-3 border-b border-gray-100 dark:border-zinc-700 flex items-center justify-between z-10">
             {/* Drag handle on mobile */}
@@ -169,8 +196,8 @@ export default function DownloadReviewModal({
               Review Download
             </h2>
             <button
-              onClick={onCancel}
-              disabled={loading}
+              onClick={handleClose}
+              disabled={loading || isClosing}
               className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer disabled:opacity-50"
               aria-label="Close review"
             >
@@ -223,8 +250,8 @@ export default function DownloadReviewModal({
           {/* Footer */}
           <div className="sticky bottom-0 bg-white dark:bg-zinc-800 p-4 pt-3 border-t border-gray-100 dark:border-zinc-700 flex gap-3">
             <button
-              onClick={onCancel}
-              disabled={loading}
+              onClick={handleClose}
+              disabled={loading || isClosing}
               className="flex-1 px-4 py-2.5 text-sm font-medium bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-zinc-300 rounded-md hover:bg-gray-200 dark:hover:bg-zinc-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
@@ -256,26 +283,6 @@ export default function DownloadReviewModal({
           </div>
         </div>
       </div>
-
-      {/* Animation styles */}
-      <style jsx>{`
-        .animate-in {
-          animation: slideUp 0.25s ease-out;
-        }
-        @media (min-width: 768px) {
-          .animate-in {
-            animation: fadeScale 0.2s ease-out;
-          }
-        }
-        @keyframes slideUp {
-          from { transform: translateY(100%); }
-          to { transform: translateY(0); }
-        }
-        @keyframes fadeScale {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
-        }
-      `}</style>
     </>
   );
 }
