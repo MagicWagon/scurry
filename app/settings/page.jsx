@@ -69,7 +69,63 @@ function SettingsPage() {
     fetchSettings();
   }, [fetchSettings]);
 
+  // Helper to check if arrays are equal
+  const arraysEqual = (a, b) => {
+    if (a.length !== b.length) return false;
+    const sortedA = [...a].sort();
+    const sortedB = [...b].sort();
+    return sortedA.every((val, idx) => val === sortedB[idx]);
+  };
+
+  // Dirty state detection
+  const isQbDirty = settings && (
+    qbUrl.trim() !== (settings.qbittorrent?.url || "") ||
+    qbUsername.trim() !== (settings.qbittorrent?.username || "") ||
+    qbPassword !== (settings.qbittorrent?.password || "")
+  );
+
+  const isTagsDirty = settings && (
+    tagsEnabled !== (settings.tags?.enabled || false) ||
+    !arraysEqual(availableTags, settings.tags?.available || []) ||
+    !arraysEqual(defaultBookTags, Array.isArray(settings.tags?.defaults?.books) ? settings.tags.defaults.books : []) ||
+    !arraysEqual(defaultAudiobookTags, Array.isArray(settings.tags?.defaults?.audiobooks) ? settings.tags.defaults.audiobooks : [])
+  );
+
+  const isCategoriesDirty = settings && (
+    categoriesEnabled !== (settings.categories?.enabled || false) ||
+    defaultBookCategory.trim() !== (settings.categories?.defaults?.books || "books") ||
+    defaultAudiobookCategory.trim() !== (settings.categories?.defaults?.audiobooks || "audiobooks")
+  );
+
+  // Overall dirty state (for beforeunload)
+  const isDirty = isQbDirty || isTagsDirty || isCategoriesDirty;
+
+  // Current tab dirty state (for tab switching)
+  const isCurrentTabDirty = 
+    (activeTab === "qbittorrent" && isQbDirty) ||
+    (activeTab === "tags" && isTagsDirty) ||
+    (activeTab === "categories" && isCategoriesDirty);
+
+  // Guard: Browser close / refresh
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
+
   const handleTabChange = (tabId) => {
+    // Guard: Tab switching
+    if (isCurrentTabDirty) {
+      const confirmed = window.confirm("You have unsaved changes. Leave without saving?");
+      if (!confirmed) return;
+    }
+
     setActiveTab(tabId);
     setMessage(null);
     setConnectionResult(null);
@@ -213,6 +269,15 @@ function SettingsPage() {
     },
   });
 
+  const handleBackClick = () => {
+    // Guard: Back button navigation
+    if (isDirty) {
+      const confirmed = window.confirm("You have unsaved changes. Leave without saving?");
+      if (!confirmed) return;
+    }
+    router.push("/");
+  };
+
   if (loading) {
     return (
       <main className="my-4 p-4 w-full max-w-4xl mx-auto">
@@ -235,7 +300,7 @@ function SettingsPage() {
       <div className="rounded-lg bg-gray-50 dark:bg-zinc-800 overflow-hidden">
         <div className="p-7 pb-0 flex items-center gap-3">
           <button
-            onClick={() => router.push("/")}
+            onClick={handleBackClick}
             className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
             aria-label="Back to search"
           >
