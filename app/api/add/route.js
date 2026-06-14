@@ -7,12 +7,19 @@ import { purchaseFlWedge } from "@/src/lib/wedge";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function resolveQbCategory(body) {
+  if (body.category) return body.category;
+  if (body.mediaType === "audiobooks") return config.qbAudiobookCategory;
+  if (body.mediaType === "books") return config.qbBookCategory;
+  return config.qbCategory;
+}
+
 export async function POST(req) {
   const body = await req.json();
   const title = body.title;
   const urlOrMagnet = body.downloadUrl;
   const torrentId = body.torrentId;
-  const category = body.category || config.qbCategory; // Use category from request or fallback to config
+  const category = resolveQbCategory(body);
   const useWedge = body.useWedge || false;
   
   if (!urlOrMagnet) {

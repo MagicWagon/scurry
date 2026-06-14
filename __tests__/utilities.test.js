@@ -4,7 +4,11 @@ import {
   buildMamTorrentUrl,
   buildPayload,
   formatNumberWithCommas,
+  hasM4b,
+  isEpubOnly,
   parseAuthorInfo,
+  parseAuthorDetails,
+  preferSearchResults,
   parseSizeToBytes,
   formatBytesToSize,
   calculateNewRatio,
@@ -46,10 +50,46 @@ describe('utilities', () => {
     expect(parseAuthorInfo('{"author":"Author Name"}')).toBe('Author Name');
   });
 
+  it('parseAuthorDetails parses author and narrator values', () => {
+    expect(parseAuthorDetails('{"author":"Author Name","narrator":"Narrator Name"}')).toEqual({
+      author: 'Author Name',
+      narrator: 'Narrator Name'
+    });
+    expect(parseAuthorDetails('{"author":"Author Name","reader":"Reader Name"}')).toEqual({
+      author: 'Author Name',
+      narrator: 'Reader Name'
+    });
+    expect(parseAuthorDetails('{"Author":"Author Name","Read By":"Reader Name"}')).toEqual({
+      author: 'Author Name',
+      narrator: 'Reader Name'
+    });
+  });
+
   it('parseAuthorInfo returns null for invalid JSON', () => {
     expect(parseAuthorInfo('not json')).toBeNull();
     expect(parseAuthorInfo(null)).toBeNull();
     expect(parseAuthorInfo('{}')).toBeNull();
+  });
+
+  it('detects preferred file formats', () => {
+    expect(isEpubOnly('epub')).toBe(true);
+    expect(isEpubOnly('epub, mobi')).toBe(false);
+    expect(hasM4b('m4b')).toBe(true);
+    expect(hasM4b('mp3 / m4b')).toBe(true);
+    expect(hasM4b('mp3')).toBe(false);
+  });
+
+  it('stable-sorts preferred formats without filtering results', () => {
+    const results = [
+      { id: 'pdf', filetypes: 'pdf' },
+      { id: 'epub-1', filetypes: 'epub' },
+      { id: 'mixed', filetypes: 'epub, mobi' },
+      { id: 'epub-2', filetypes: 'EPUB' }
+    ];
+
+    expect(preferSearchResults(results, 'books', { preferEpubOnly: true }).map(result => result.id))
+      .toEqual(['epub-1', 'epub-2', 'pdf', 'mixed']);
+    expect(preferSearchResults(results, 'books', { preferEpubOnly: false })).toBe(results);
   });
 
   it('validateMamToken validates token format correctly', () => {

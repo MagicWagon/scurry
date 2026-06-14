@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { readMamToken } from "@/src/lib/config";
-import { buildPayload, buildMamDownloadUrl, buildMamTorrentUrl, formatNumberWithCommas, parseAuthorInfo } from "@/src/lib/utilities";
-import { MAM_BASE, MAM_CATEGORIES, MAM_TOKEN_FILE } from "@/src/lib/constants";
+import { config, readMamToken } from "@/src/lib/config";
+import { buildPayload, buildMamDownloadUrl, buildMamTorrentUrl, formatNumberWithCommas, parseAuthorDetails, preferSearchResults } from "@/src/lib/utilities";
+import { MAM_BASE, MAM_CATEGORIES } from "@/src/lib/constants";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -80,22 +80,29 @@ export async function GET(req) {
   }
 
   // map the results to a simpler format
-  const results = data.data.map(item => ({
-    id: item.id ?? null,
-    title: item.title ?? "",
-    size: item.size ?? "",
-    filetypes: item.filetype ?? "",
-    addedDate: item.added ?? "",
-    vip: Boolean(item.vip == 1),
-    freeleech: Boolean(item.free == 1),
-    snatched: Boolean(item.my_snatched == 1),
-    author: parseAuthorInfo(item.author_info),
-    seeders: formatNumberWithCommas(item.seeders ?? 0),
-    leechers: formatNumberWithCommas(item.leechers ?? 0),
-    downloads: formatNumberWithCommas(item.times_completed ?? 0),
-    downloadUrl: buildMamDownloadUrl(item.dl ?? ""),
-    torrentUrl: buildMamTorrentUrl((item.id ?? ""))
-  }));
+  const results = preferSearchResults(data.data.map(item => {
+    const authorDetails = parseAuthorDetails(item.author_info);
+    return {
+      id: item.id ?? null,
+      title: item.title ?? "",
+      size: item.size ?? "",
+      filetypes: item.filetype ?? "",
+      addedDate: item.added ?? "",
+      vip: Boolean(item.vip == 1),
+      freeleech: Boolean(item.free == 1),
+      snatched: Boolean(item.my_snatched == 1),
+      author: authorDetails.author,
+      narrator: category === "audiobooks" ? authorDetails.narrator : null,
+      seeders: formatNumberWithCommas(item.seeders ?? 0),
+      leechers: formatNumberWithCommas(item.leechers ?? 0),
+      downloads: formatNumberWithCommas(item.times_completed ?? 0),
+      downloadUrl: buildMamDownloadUrl(item.dl ?? ""),
+      torrentUrl: buildMamTorrentUrl((item.id ?? ""))
+    };
+  }), category, {
+    preferEpubOnly: config.preferEpubOnly,
+    preferM4b: config.preferM4b
+  });
 
   console.log(`Returning ${results.length} results for query: '${q}' (${category})`);
 

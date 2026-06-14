@@ -1,17 +1,22 @@
 import { describe, it, expect, vi } from 'vitest';
 import { GET } from '../app/api/search/route.js';
 import { buildMamDownloadUrl, buildMamTorrentUrl } from '../src/lib/utilities.js';
+import { config } from '../src/lib/config';
+
+const mockConfig = vi.hoisted(() => ({
+  qbUrl: '',
+  qbUser: '',
+  qbPass: '',
+  qbCategory: '',
+  mamTokenFile: 'secrets/mam_api_token',
+  preferEpubOnly: false,
+  preferM4b: false
+}));
 
 // Mock fetch and dependencies
 vi.mock('../src/lib/config', () => ({
   readMamToken: vi.fn(() => 'fake-token'),
-  config: { 
-    qbUrl: '', 
-    qbUser: '', 
-    qbPass: '', 
-    qbCategory: '',
-    mamTokenFile: 'secrets/mam_api_token'
-  }
+  config: mockConfig
 }));
 
 global.fetch = vi.fn(async () => ({
@@ -22,6 +27,12 @@ global.fetch = vi.fn(async () => ({
 }));
 
 describe('search route', () => {
+  beforeEach(() => {
+    config.preferEpubOnly = false;
+    config.preferM4b = false;
+    global.fetch.mockClear();
+  });
+
   it('returns empty results for empty query', async () => {
     const req = { url: 'http://localhost/api/search?q=' };
     const res = await GET(req);
@@ -75,6 +86,80 @@ describe('search route', () => {
     expect(result.seeders).toBe('0');
     expect(result.leechers).toBe('0');
     expect(result.downloads).toBe('0');
+  });
+
+  it('returns narrator for audiobook results when present', async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        data: [{
+          id: 'audio-1',
+          dl: 'abc',
+          title: 'Audio',
+          size: '1 GB',
+          filetype: 'm4b',
+          added: '2025-08-14',
+          vip: 0,
+          free: 0,
+          my_snatched: 0,
+          author_info: '{"author":"Author","narrator":"Narrator"}',
+          seeders: 10,
+          leechers: 2,
+          times_completed: 5
+        }]
+      }),
+      text: async () => "",
+    });
+
+    const req = { url: 'http://localhost/api/search?q=test&category=audiobooks' };
+    const res = await GET(req);
+    const json = await res.json();
+
+    expect(json.results[0].author).toBe('Author');
+    expect(json.results[0].narrator).toBe('Narrator');
+  });
+
+  it('moves EPUB-only book results to the top without filtering', async () => {
+    config.preferEpubOnly = true;
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        data: [
+          { id: 'pdf', dl: 'pdf', title: 'PDF', size: '1 MB', filetype: 'pdf', added: '', vip: 0, free: 0, my_snatched: 0, author_info: '{"author":"A"}', seeders: 1, leechers: 0, times_completed: 1 },
+          { id: 'epub', dl: 'epub', title: 'EPUB', size: '1 MB', filetype: 'epub', added: '', vip: 0, free: 0, my_snatched: 0, author_info: '{"author":"A"}', seeders: 1, leechers: 0, times_completed: 1 },
+          { id: 'mixed', dl: 'mixed', title: 'Mixed', size: '1 MB', filetype: 'epub, mobi', added: '', vip: 0, free: 0, my_snatched: 0, author_info: '{"author":"A"}', seeders: 1, leechers: 0, times_completed: 1 }
+        ]
+      }),
+      text: async () => "",
+    });
+
+    const res = await GET({ url: 'http://localhost/api/search?q=test&category=books' });
+    const json = await res.json();
+
+    expect(json.results.map(result => result.id)).toEqual(['epub', 'pdf', 'mixed']);
+  });
+
+  it('moves M4B audiobook results to the top without filtering', async () => {
+    config.preferM4b = true;
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        data: [
+          { id: 'mp3', dl: 'mp3', title: 'MP3', size: '1 GB', filetype: 'mp3', added: '', vip: 0, free: 0, my_snatched: 0, author_info: '{"author":"A"}', seeders: 1, leechers: 0, times_completed: 1 },
+          { id: 'm4b', dl: 'm4b', title: 'M4B', size: '1 GB', filetype: 'm4b', added: '', vip: 0, free: 0, my_snatched: 0, author_info: '{"author":"A"}', seeders: 1, leechers: 0, times_completed: 1 },
+          { id: 'mixed', dl: 'mixed', title: 'Mixed', size: '1 GB', filetype: 'mp3 / m4b', added: '', vip: 0, free: 0, my_snatched: 0, author_info: '{"author":"A"}', seeders: 1, leechers: 0, times_completed: 1 }
+        ]
+      }),
+      text: async () => "",
+    });
+
+    const res = await GET({ url: 'http://localhost/api/search?q=test&category=audiobooks' });
+    const json = await res.json();
+
+    expect(json.results.map(result => result.id)).toEqual(['m4b', 'mixed', 'mp3']);
   });
 });
 

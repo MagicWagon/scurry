@@ -58,10 +58,25 @@ Dual fetch allows you to fetch _both_ ebook and audibooks at the same time in a 
 ### qBittorrent Categorization
 Scurry will organize torrents into the following categories based on their MAM type:
 
-- **Books**: `books` category
-- **Audiobooks**: `audiobooks` category
+- **Books**: `books` category by default
+- **Audiobooks**: `audiobooks` category by default
 
 To take advantage of this, simply create those categories - `books` and `audiobooks` - in qBittorrent, with unique save paths.
+
+You can override these categories with Docker environment variables:
+
+- `APP_QB_BOOK_CATEGORY`: qBittorrent category for ebook downloads. Defaults to `APP_QB_CATEGORY`, then `books`.
+- `APP_QB_AUDIOBOOK_CATEGORY`: qBittorrent category for audiobook downloads. Defaults to `audiobooks`.
+
+### Search Defaults and Format Preference
+
+Scurry supports runtime Docker configuration for the default GUI mode and result ordering:
+
+- `APP_DEFAULT_SEARCH_CATEGORY`: `books`, `audiobooks`, or `both`. Defaults to `books`.
+- `APP_PREFER_EPUB_ONLY`: when `true`, exact EPUB-only ebook results are moved to the top.
+- `APP_PREFER_M4B`: when `true`, M4B audiobook results are moved to the top.
+
+Preferred formats are not filtered; all results still appear below the preferred matches.
 
 ### Mousehole Integration (Optional)
 
@@ -110,6 +125,11 @@ services:
       APP_QB_URL: # qbittorrent URL
       APP_QB_USERNAME: # qbittorrent user
       APP_QB_PASSWORD: # qbittorrent password
+      APP_QB_BOOK_CATEGORY: books
+      APP_QB_AUDIOBOOK_CATEGORY: audiobooks
+      APP_DEFAULT_SEARCH_CATEGORY: both
+      APP_PREFER_EPUB_ONLY: "false"
+      APP_PREFER_M4B: "false"
     volumes:
       - ./secrets:/app/secrets
     restart: unless-stopped
@@ -125,6 +145,11 @@ docker run -d \
   -e APP_QB_URL=URL \
   -e APP_QB_USERNAME=admin \
   -e APP_QB_PASSWORD=PASSWORD \
+  -e APP_QB_BOOK_CATEGORY=books \
+  -e APP_QB_AUDIOBOOK_CATEGORY=audiobooks \
+  -e APP_DEFAULT_SEARCH_CATEGORY=both \
+  -e APP_PREFER_EPUB_ONLY=false \
+  -e APP_PREFER_M4B=false \
   -v /VOLUME/scurry:/app/secrets \
   --restart always \
   ghcr.io/masonfox/scurry:latest

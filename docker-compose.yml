@@ -10,6 +10,11 @@ services:
       APP_QB_URL: ${APP_QB_URL:-http://qbittorrent:8080}
       APP_QB_USERNAME: ${APP_QB_USERNAME:-admin}
       APP_QB_PASSWORD: ${APP_QB_PASSWORD:-adminadmin}
+      APP_QB_BOOK_CATEGORY: ${APP_QB_BOOK_CATEGORY:-}
+      APP_QB_AUDIOBOOK_CATEGORY: ${APP_QB_AUDIOBOOK_CATEGORY:-}
+      APP_DEFAULT_SEARCH_CATEGORY: ${APP_DEFAULT_SEARCH_CATEGORY:-books}
+      APP_PREFER_EPUB_ONLY: ${APP_PREFER_EPUB_ONLY:-false}
+      APP_PREFER_M4B: ${APP_PREFER_M4B:-false}
       APP_MAM_USER_AGENT: ${APP_MAM_USER_AGENT:-Scurry/2.0 (+contact)}
     volumes:
       - ./secrets:/app/secrets

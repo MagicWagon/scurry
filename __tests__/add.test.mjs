@@ -5,7 +5,14 @@ import * as userStatsRoute from '../app/api/user-stats/route.js';
 import * as wedge from '../src/lib/wedge';
 
 vi.mock('../src/lib/config', () => ({
-  config: { qbUrl: 'http://qb', qbUser: 'user', qbPass: 'pass', qbCategory: 'cat' }
+  config: {
+    qbUrl: 'http://qb',
+    qbUser: 'user',
+    qbPass: 'pass',
+    qbCategory: 'cat',
+    qbBookCategory: 'book-cat',
+    qbAudiobookCategory: 'audio-cat'
+  }
 }));
 vi.mock('../src/lib/qbittorrent', () => ({
   qbLogin: vi.fn(async () => 'cookie'),
@@ -36,6 +43,33 @@ describe('add route', () => {
     const res = await POST(req);
     const json = await res.json();
     expect(json.ok).toBe(true);
+  });
+
+  it('uses configured book category when mediaType is books', async () => {
+    const req = { json: async () => ({ title: 'test', downloadUrl: 'magnet:?xt=...', mediaType: 'books' }) };
+    const res = await POST(req);
+    const json = await res.json();
+
+    expect(json.ok).toBe(true);
+    expect(qbittorrent.qbAddUrl).toHaveBeenCalledWith('http://qb', 'cookie', 'magnet:?xt=...', 'book-cat');
+  });
+
+  it('uses configured audiobook category when mediaType is audiobooks', async () => {
+    const req = { json: async () => ({ title: 'test', downloadUrl: 'magnet:?xt=...', mediaType: 'audiobooks' }) };
+    const res = await POST(req);
+    const json = await res.json();
+
+    expect(json.ok).toBe(true);
+    expect(qbittorrent.qbAddUrl).toHaveBeenCalledWith('http://qb', 'cookie', 'magnet:?xt=...', 'audio-cat');
+  });
+
+  it('preserves explicit legacy category over mediaType', async () => {
+    const req = { json: async () => ({ title: 'test', downloadUrl: 'magnet:?xt=...', mediaType: 'books', category: 'legacy-cat' }) };
+    const res = await POST(req);
+    const json = await res.json();
+
+    expect(json.ok).toBe(true);
+    expect(qbittorrent.qbAddUrl).toHaveBeenCalledWith('http://qb', 'cookie', 'magnet:?xt=...', 'legacy-cat');
   });
 
   it('busts stats cache after successful download', async () => {

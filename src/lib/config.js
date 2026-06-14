@@ -9,15 +9,33 @@ function need(name) {
   return v;
 }
 
+function boolEnv(name, defaultValue = false) {
+  const v = process.env[name];
+  if (v == null || v === "") return defaultValue;
+  return ["1", "true", "yes", "on"].includes(String(v).trim().toLowerCase());
+}
+
+function searchCategoryEnv(name, defaultValue = "books") {
+  const v = process.env[name];
+  return ["books", "audiobooks", "both"].includes(v) ? v : defaultValue;
+}
+
+const legacyQbCategory = process.env.APP_QB_CATEGORY || "books";
+
 const cfg = {
   appPassword: process.env.APP_PASSWORD || "cheese",
   qbUrl: need("APP_QB_URL"),
-  qbCategory: process.env.APP_QB_CATEGORY || "books",
+  qbCategory: legacyQbCategory,
+  qbBookCategory: process.env.APP_QB_BOOK_CATEGORY || legacyQbCategory,
+  qbAudiobookCategory: process.env.APP_QB_AUDIOBOOK_CATEGORY || "audiobooks",
   qbUser: process.env.APP_QB_USERNAME || "admin",
   qbPass: process.env.APP_QB_PASSWORD || "adminadmin",
   mamUA: process.env.APP_MAM_USER_AGENT || "Scurry/1.0 (+contact)",
   mouseholeEnabled: process.env.MOUSEHOLE_ENABLED === "true",
   mouseholeStateFile: process.env.MOUSEHOLE_STATE_FILE || "secrets/state.json",
+  preferEpubOnly: boolEnv("APP_PREFER_EPUB_ONLY"),
+  preferM4b: boolEnv("APP_PREFER_M4B"),
+  defaultSearchCategory: searchCategoryEnv("APP_DEFAULT_SEARCH_CATEGORY"),
 };
 
 export function readMamToken() {

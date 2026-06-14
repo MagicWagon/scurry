@@ -114,6 +114,11 @@ export default function SearchResultItem({ result, onAddItem, selectable = false
           <div className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
             {result.size} • {result.filetypes} • {result.seeders} seeders • {result.downloads} downloads
           </div>
+          {result.narrator && (
+            <div className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
+              Narrated by {result.narrator}
+            </div>
+          )}
           {/* Determine if torrent has already been snatched */}
           {result.snatched && (
             <div className="text-sm font-bold mt-2 text-[#bf6952]">
@@ -188,7 +193,8 @@ SearchResultItem.propTypes = {
     downloadUrl: PropTypes.string.isRequired,
     vip: PropTypes.bool,
     freeleech: PropTypes.bool,
-    snatched: PropTypes.bool
+    snatched: PropTypes.bool,
+    narrator: PropTypes.string
   }).isRequired,
   onAddItem: PropTypes.func,
   selectable: PropTypes.bool,

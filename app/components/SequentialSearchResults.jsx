@@ -270,7 +270,8 @@ const resultShape = PropTypes.shape({
   downloadUrl: PropTypes.string.isRequired,
   vip: PropTypes.bool,
   freeleech: PropTypes.bool,
-  snatched: PropTypes.bool
+  snatched: PropTypes.bool,
+  narrator: PropTypes.string
 });
 
 SequentialSearchResults.propTypes = {

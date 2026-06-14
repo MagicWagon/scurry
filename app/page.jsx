@@ -9,8 +9,8 @@ import DualSearchResultsList from './components/DualSearchResultsList';
 import SequentialSearchResults from './components/SequentialSearchResults';
 import UserStatsBar from './components/UserStatsBar';
 
-const DEFAULT_CATEGORY = process.env.NEXT_PUBLIC_DEFAULT_CATEGORY ?? "books";
 const SUCCESS_MESSAGE_DURATION_MS = 5000;
+const VALID_CATEGORIES = new Set(["books", "audiobooks", "both"]);
 
 function SearchPage() {
   const [q, setQ] = useState("");
@@ -41,12 +41,22 @@ function SearchPage() {
   const [useAudiobookWedge, setUseAudiobookWedge] = useState(false);
   const [useBookWedge, setUseBookWedge] = useState(false);
 
-  // Load saved category from localStorage on mount
+  // Load saved category from localStorage, otherwise use the server runtime default.
   useEffect(() => {
     const savedCategory = localStorage.getItem('scurry_search_category');
-    if (savedCategory && (savedCategory === 'books' || savedCategory === 'audiobooks' || savedCategory === 'both')) {
+    if (VALID_CATEGORIES.has(savedCategory)) {
       setSearchCategory(savedCategory);
+      return;
     }
+
+    fetch('/api/config')
+      .then((res) => res.json())
+      .then((data) => {
+        if (VALID_CATEGORIES.has(data.defaultSearchCategory)) {
+          setSearchCategory(data.defaultSearchCategory);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   // Track current search to handle concurrency
@@ -269,11 +279,9 @@ function SearchPage() {
   const addItem = useCallback(async (item) => {
     setMessage(null);
     try {
-      // Map search category to qBittorrent category
-      const qbCategory = searchCategory === "audiobooks" ? "audiobooks" : "books";
-      
       // Check if wedge should be used for this item
       const useWedge = singleModeWedges[item.id] || false;
+      const mediaType = searchCategory === "audiobooks" ? "audiobooks" : "books";
       
       const res = await fetch(`/api/add`, {
         method: "POST",
@@ -282,7 +290,7 @@ function SearchPage() {
           title: item.title,
           downloadUrl: item.downloadUrl,
           torrentId: item.id,
-          category: qbCategory,
+          mediaType,
           useWedge
         })
       });
@@ -363,7 +371,7 @@ function SearchPage() {
             title: selectedAudiobook.title,
             downloadUrl: selectedAudiobook.downloadUrl,
             torrentId: selectedAudiobook.id,
-            category: 'audiobooks',
+            mediaType: 'audiobooks',
             useWedge: effectiveAudiobookWedge
           })
         }),
@@ -374,7 +382,7 @@ function SearchPage() {
             title: selectedBook.title,
             downloadUrl: selectedBook.downloadUrl,
             torrentId: selectedBook.id,
-            category: 'books',
+            mediaType: 'books',
             useWedge: effectiveBookWedge
           })
         })

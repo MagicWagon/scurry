@@ -36,13 +36,55 @@ export function formatNumberWithCommas(num) {
 }
 
 export function parseAuthorInfo(authorInfo) {
+  return parseAuthorDetails(authorInfo).author;
+}
+
+export function parseAuthorDetails(authorInfo) {
   try {
     const parsed = JSON.parse(authorInfo ?? '{}');
     const values = Object.values(parsed);
-    return values.length > 0 ? values[0] : null;
+    const normalized = Object.entries(parsed).reduce((acc, [key, value]) => {
+      acc[String(key).toLowerCase().replace(/[^a-z0-9]/g, "")] = value;
+      return acc;
+    }, {});
+    return {
+      author: normalized.author ?? values[0] ?? null,
+      narrator: normalized.narrator ?? normalized.reader ?? normalized.readby ?? null
+    };
   } catch {
-    return null;
+    return { author: null, narrator: null };
   }
+}
+
+export function isEpubOnly(filetypes) {
+  return String(filetypes ?? "").trim().toLowerCase() === "epub";
+}
+
+export function hasM4b(filetypes) {
+  return String(filetypes ?? "")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .includes("m4b");
+}
+
+export function preferSearchResults(results, category, options = {}) {
+  const shouldPrefer = category === "books"
+    ? options.preferEpubOnly
+    : category === "audiobooks" && options.preferM4b;
+
+  if (!shouldPrefer) return results;
+
+  const isPreferred = category === "books" ? isEpubOnly : hasM4b;
+
+  return results
+    .map((result, index) => ({ result, index }))
+    .sort((a, b) => {
+      const aPreferred = isPreferred(a.result.filetypes);
+      const bPreferred = isPreferred(b.result.filetypes);
+      if (aPreferred === bPreferred) return a.index - b.index;
+      return aPreferred ? -1 : 1;
+    })
+    .map(({ result }) => result);
 }
 
 /**
