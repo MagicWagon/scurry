@@ -41,14 +41,8 @@ function SearchPage() {
   const [useAudiobookWedge, setUseAudiobookWedge] = useState(false);
   const [useBookWedge, setUseBookWedge] = useState(false);
 
-  // Load saved category from localStorage, otherwise use the server runtime default.
+  // Prefer the server runtime default. Only fall back to localStorage if config fetch fails.
   useEffect(() => {
-    const savedCategory = localStorage.getItem('scurry_search_category');
-    if (VALID_CATEGORIES.has(savedCategory)) {
-      setSearchCategory(savedCategory);
-      return;
-    }
-
     fetch('/api/config')
       .then((res) => res.json())
       .then((data) => {
@@ -56,7 +50,12 @@ function SearchPage() {
           setSearchCategory(data.defaultSearchCategory);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        const savedCategory = localStorage.getItem('scurry_search_category');
+        if (VALID_CATEGORIES.has(savedCategory)) {
+          setSearchCategory(savedCategory);
+        }
+      });
   }, []);
 
   // Track current search to handle concurrency
