@@ -39,6 +39,16 @@ export function parseAuthorInfo(authorInfo) {
   return parseAuthorDetails(authorInfo).author;
 }
 
+export function parseInfoValue(info) {
+  try {
+    const parsed = JSON.parse(info ?? '{}');
+    const values = Object.values(parsed);
+    return values.length > 0 ? values[0] ?? null : null;
+  } catch {
+    return null;
+  }
+}
+
 export function parseAuthorDetails(authorInfo) {
   try {
     const parsed = JSON.parse(authorInfo ?? '{}');

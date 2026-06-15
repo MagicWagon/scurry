@@ -8,6 +8,7 @@ import {
   isEpubOnly,
   parseAuthorInfo,
   parseAuthorDetails,
+  parseInfoValue,
   preferSearchResults,
   parseSizeToBytes,
   formatBytesToSize,
@@ -63,6 +64,16 @@ describe('utilities', () => {
       author: 'Author Name',
       narrator: 'Reader Name'
     });
+    expect(parseAuthorDetails('{"7774":"Brandon Sanderson"}')).toEqual({
+      author: 'Brandon Sanderson',
+      narrator: null
+    });
+  });
+
+  it('parseInfoValue returns the first mapped value', () => {
+    expect(parseInfoValue('{"208":"Michael Kramer"}')).toBe('Michael Kramer');
+    expect(parseInfoValue('not json')).toBeNull();
+    expect(parseInfoValue(null)).toBeNull();
   });
 
   it('parseAuthorInfo returns null for invalid JSON', () => {

@@ -103,7 +103,8 @@ describe('search route', () => {
           vip: 0,
           free: 0,
           my_snatched: 0,
-          author_info: '{"author":"Author","narrator":"Narrator"}',
+          author_info: '{"7774":"Author"}',
+          narrator_info: '{"208":"Narrator"}',
           seeders: 10,
           leechers: 2,
           times_completed: 5
