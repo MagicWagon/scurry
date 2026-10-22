@@ -39,12 +39,13 @@ Dual fetch allows you to fetch _both_ ebook and audibooks at the same time in a 
 ### Key Features
 
 - 🔎 **Search MAM**: Clean, responsive interface to search MyAnonamouse's extensive library
-- ⚡  **Freeleach Wedges**: Redeem freeleach wedges before downloading and check your wedge count
+- ⚡  **Freeleach Wedges**: Redeem freeleach wedges before downloading (manually or auto-applied by file size), and check your wedge count
 - 🌟 **Dual-Fetch Mode**: Search and download both ebook and audiobook simultaneously with streamlined selection workflow
 - 👉️ **One-click Downloads**: Instantly send torrents to your qBittorrent instance with a single click
 - 🤝 **Direct Integration**: Automatically authenticates with both MAM and qBittorrent APIs
 - 🔗 **URL Query Support**: Pre-fill searches using URL parameters (e.g., `?q=search+term`)
 - ⬇️ **Download Management**: Automatic categorization and organization in qBittorrent
+- ⚙️ **Persistent Settings**: Configure qBittorrent, categories, tags, search ordering, and automatic wedge thresholds from the responsive settings UI
 - 🔐 **Authentication**: Simple password protection for your instance
 - 🐋 **Docker Ready**: Easy deployment with Docker Compose
 
@@ -56,27 +57,16 @@ Dual fetch allows you to fetch _both_ ebook and audibooks at the same time in a 
 4. **Organize**: Torrents are automatically categorized and managed in your qBittorrent instance
 
 ### qBittorrent Categorization
-Scurry will organize torrents into the following categories based on their MAM type:
+Scurry organizes torrents into the following categories by default:
 
-- **Books**: `books` category by default
-- **Audiobooks**: `audiobooks` category by default
+- **Books**: `books` category
+- **Audiobooks**: `audiobooks` category
 
-To take advantage of this, simply create those categories - `books` and `audiobooks` - in qBittorrent, with unique save paths.
-
-You can override these categories with Docker environment variables:
-
-- `APP_QB_BOOK_CATEGORY`: qBittorrent category for ebook downloads. Defaults to `APP_QB_CATEGORY`, then `books`.
-- `APP_QB_AUDIOBOOK_CATEGORY`: qBittorrent category for audiobook downloads. Defaults to `audiobooks`.
+Create those categories in qBittorrent with unique save paths, or change/disable them in Settings. `APP_QB_BOOK_CATEGORY` and `APP_QB_AUDIOBOOK_CATEGORY` provide initial defaults before settings are saved.
 
 ### Search Defaults and Format Preference
 
-Scurry supports runtime Docker configuration for the default GUI mode and result ordering:
-
-- `APP_DEFAULT_SEARCH_CATEGORY`: `books`, `audiobooks`, or `both`. Defaults to `books`.
-- `APP_PREFER_EPUB_ONLY`: when `true`, exact EPUB-only ebook results are moved to the top.
-- `APP_PREFER_M4B`: when `true`, M4B audiobook results are moved to the top.
-
-Preferred formats are not filtered; all results still appear below the preferred matches.
+The Search settings page controls the initial mode (`books`, `audiobooks`, or `both`) and optional format ordering. EPUB-only books and M4B audiobooks can be moved to the top without filtering other results. The corresponding environment defaults are `APP_DEFAULT_SEARCH_CATEGORY`, `APP_PREFER_EPUB_ONLY`, and `APP_PREFER_M4B`.
 
 ### Mousehole Integration (Optional)
 
@@ -103,12 +93,44 @@ This makes it easy to bookmark searches or integrate with other tools and browse
 cp .env.example .env
 
 # Install dependencies
-npm install
+yarn --frozen-lockfile
 
 # Run Dev
-npm run dev
+yarn dev
 # visit http://localhost:3000
 ```
+
+## Docker User Permissions (PUID/PGID)
+
+Scurry supports runtime user/group ID configuration to prevent permission issues with mounted volumes. This is especially important when using bind mounts, as the container needs to match your host user's UID/GID to properly read and write files.
+
+**Default Behavior:**
+- The container runs as UID `1000` and GID `1000` by default (most common user ID on Linux systems)
+- Files created in mounted volumes will be owned by this UID/GID
+
+**Custom Configuration:**
+If your host user has a different UID/GID, set the `PUID` and `PGID` environment variables:
+
+```bash
+# Find your UID/GID on the host
+id
+
+# Add to docker-compose.yml or docker run command
+PUID=1001
+PGID=1001
+```
+
+**Example with Custom PUID/PGID:**
+```yaml
+services:
+  scurry:
+    environment:
+      PUID: 1001
+      PGID: 1001
+      # ... other environment variables
+```
+
+The container will display the active UID/GID on startup for verification.
 
 ## Production
 I recommend that you leverage the [docker image](https://github.com/masonfox/scurry/pkgs/container/scurry/) for production.
@@ -121,17 +143,20 @@ services:
     ports:
       - "3000:3000"
     environment:
+      PUID: 1000 # optional, defaults to 1000
+      PGID: 1000 # optional, defaults to 1000
       APP_PASSWORD: # remove for no auth
       APP_QB_URL: # qbittorrent URL
       APP_QB_USERNAME: # qbittorrent user
       APP_QB_PASSWORD: # qbittorrent password
       APP_QB_BOOK_CATEGORY: books
       APP_QB_AUDIOBOOK_CATEGORY: audiobooks
-      APP_DEFAULT_SEARCH_CATEGORY: both
+      APP_DEFAULT_SEARCH_CATEGORY: books
       APP_PREFER_EPUB_ONLY: "false"
       APP_PREFER_M4B: "false"
     volumes:
       - ./secrets:/app/secrets
+      - ./config:/app/config
     restart: unless-stopped
 ```
 
@@ -141,16 +166,19 @@ docker run -d \
   --name scurry \
   --pull=always \
   -p 3000:3000 \
+  -e PUID=1000 \
+  -e PGID=1000 \
   -e APP_PASSWORD=PASSWORD \
   -e APP_QB_URL=URL \
   -e APP_QB_USERNAME=admin \
   -e APP_QB_PASSWORD=PASSWORD \
   -e APP_QB_BOOK_CATEGORY=books \
   -e APP_QB_AUDIOBOOK_CATEGORY=audiobooks \
-  -e APP_DEFAULT_SEARCH_CATEGORY=both \
+  -e APP_DEFAULT_SEARCH_CATEGORY=books \
   -e APP_PREFER_EPUB_ONLY=false \
   -e APP_PREFER_M4B=false \
-  -v /VOLUME/scurry:/app/secrets \
+  -v /VOLUME/scurry/secrets:/app/secrets \
+  -v /VOLUME/scurry/config:/app/config \
   --restart always \
   ghcr.io/masonfox/scurry:latest
 ```

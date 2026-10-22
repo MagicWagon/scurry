@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { POST } from '../app/api/add/route.js';
 import * as qbittorrent from '../src/lib/qbittorrent';
 import * as userStatsRoute from '../app/api/user-stats/route.js';
-import * as wedge from '../src/lib/wedge';
 
 vi.mock('../src/lib/config', () => ({
   config: {
@@ -21,13 +20,25 @@ vi.mock('../src/lib/qbittorrent', () => ({
 vi.mock('../app/api/user-stats/route.js', () => ({
   bustStatsCache: vi.fn()
 }));
-vi.mock('../src/lib/wedge', () => ({
-  purchaseFlWedge: vi.fn()
+vi.mock('../src/lib/settings', () => ({
+  readSettings: vi.fn(() => ({
+    qbittorrent: { url: 'http://qb', username: 'user', password: 'pass' },
+    tags: { enabled: false, available: [], defaults: { books: [], audiobooks: [] } },
+    categories: { enabled: false, defaults: { books: 'books', audiobooks: 'audiobooks' } }
+  }))
 }));
+
+import * as settingsMod from '../src/lib/settings';
 
 describe('add route', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Match production defaults: categories enabled, tags disabled.
+    settingsMod.readSettings.mockReturnValue({
+      qbittorrent: { url: 'http://qb', username: 'user', password: 'pass' },
+      tags: { enabled: false, available: [], defaults: { books: [], audiobooks: [] } },
+      categories: { enabled: true, defaults: { books: 'book-cat', audiobooks: 'audio-cat' } }
+    });
   });
 
   it('returns 400 if no downloadUrl provided', async () => {
@@ -51,7 +62,10 @@ describe('add route', () => {
     const json = await res.json();
 
     expect(json.ok).toBe(true);
-    expect(qbittorrent.qbAddUrl).toHaveBeenCalledWith('http://qb', 'cookie', 'magnet:?xt=...', 'book-cat');
+    expect(qbittorrent.qbAddUrl).toHaveBeenCalledWith(
+      'http://qb', 'cookie', 'magnet:?xt=...',
+      expect.objectContaining({ category: 'book-cat' })
+    );
   });
 
   it('uses configured audiobook category when mediaType is audiobooks', async () => {
@@ -60,7 +74,10 @@ describe('add route', () => {
     const json = await res.json();
 
     expect(json.ok).toBe(true);
-    expect(qbittorrent.qbAddUrl).toHaveBeenCalledWith('http://qb', 'cookie', 'magnet:?xt=...', 'audio-cat');
+    expect(qbittorrent.qbAddUrl).toHaveBeenCalledWith(
+      'http://qb', 'cookie', 'magnet:?xt=...',
+      expect.objectContaining({ category: 'audio-cat' })
+    );
   });
 
   it('preserves explicit legacy category over mediaType', async () => {
@@ -69,7 +86,10 @@ describe('add route', () => {
     const json = await res.json();
 
     expect(json.ok).toBe(true);
-    expect(qbittorrent.qbAddUrl).toHaveBeenCalledWith('http://qb', 'cookie', 'magnet:?xt=...', 'legacy-cat');
+    expect(qbittorrent.qbAddUrl).toHaveBeenCalledWith(
+      'http://qb', 'cookie', 'magnet:?xt=...',
+      expect.objectContaining({ category: 'legacy-cat' })
+    );
   });
 
   it('busts stats cache after successful download', async () => {
@@ -112,23 +132,118 @@ describe('add route', () => {
     expect(userStatsRoute.bustStatsCache).not.toHaveBeenCalled();
   });
 
-  describe('wedge integration', () => {
-    beforeEach(() => {
-      vi.clearAllMocks();
-    });
-
-    it('purchases FL wedge before adding torrent when useWedge is true', async () => {
-      // Mock successful wedge purchase
-      wedge.purchaseFlWedge.mockResolvedValueOnce({
-        success: true,
-        torrentId: '12345'
+  describe('tags and categories', () => {
+    it('passes tags when tags are enabled in settings', async () => {
+      settingsMod.readSettings.mockReturnValue({
+        qbittorrent: { url: 'http://qb', username: 'user', password: 'pass' },
+        tags: { enabled: true, available: ['fiction', 'favorites'], defaults: { books: [], audiobooks: [] } },
+        categories: { enabled: false, defaults: { books: 'books', audiobooks: 'audiobooks' } }
       });
 
       const req = {
         json: async () => ({
           title: 'Test Book',
           downloadUrl: 'magnet:?xt=...',
-          torrentId: '12345',
+          tags: ['fiction', 'favorites']
+        })
+      };
+
+      const res = await POST(req);
+      const json = await res.json();
+
+      expect(json.ok).toBe(true);
+      expect(qbittorrent.qbAddUrl).toHaveBeenCalledWith(
+        'http://qb', 'cookie', 'magnet:?xt=...',
+        expect.objectContaining({ tags: ['fiction', 'favorites'] })
+      );
+    });
+
+    it('does not pass tags when tags are disabled in settings', async () => {
+      const req = {
+        json: async () => ({
+          title: 'Test Book',
+          downloadUrl: 'magnet:?xt=...',
+          tags: ['fiction']
+        })
+      };
+
+      const res = await POST(req);
+      const json = await res.json();
+
+      expect(json.ok).toBe(true);
+      expect(qbittorrent.qbAddUrl).toHaveBeenCalledWith(
+        'http://qb', 'cookie', 'magnet:?xt=...',
+        expect.objectContaining({ tags: undefined })
+      );
+    });
+
+    it('passes category when categories are enabled', async () => {
+      settingsMod.readSettings.mockReturnValue({
+        qbittorrent: { url: 'http://qb', username: 'user', password: 'pass' },
+        tags: { enabled: false, available: [], defaults: { books: [], audiobooks: [] } },
+        categories: { enabled: true, defaults: { books: 'books', audiobooks: 'audiobooks' } }
+      });
+
+      const req = {
+        json: async () => ({
+          title: 'Test Book',
+          downloadUrl: 'magnet:?xt=...',
+          category: 'books'
+        })
+      };
+
+      const res = await POST(req);
+      const json = await res.json();
+
+      expect(json.ok).toBe(true);
+      expect(qbittorrent.qbAddUrl).toHaveBeenCalledWith(
+        'http://qb', 'cookie', 'magnet:?xt=...',
+        expect.objectContaining({ category: 'books' })
+      );
+    });
+
+    it('omits category when categories are disabled', async () => {
+      settingsMod.readSettings.mockReturnValue({
+        qbittorrent: { url: 'http://qb', username: 'user', password: 'pass' },
+        tags: { enabled: false, available: [], defaults: { books: [], audiobooks: [] } },
+        categories: { enabled: false, defaults: { books: 'books', audiobooks: 'audiobooks' } }
+      });
+
+      const req = {
+        json: async () => ({
+          title: 'Test Book',
+          downloadUrl: 'magnet:?xt=...',
+          category: 'books'
+        })
+      };
+
+      const res = await POST(req);
+      const json = await res.json();
+
+      expect(json.ok).toBe(true);
+      expect(qbittorrent.qbAddUrl).toHaveBeenCalledWith(
+        'http://qb', 'cookie', 'magnet:?xt=...',
+        expect.objectContaining({ category: undefined })
+      );
+    });
+  });
+
+  describe('FL via &fl URL parameter', () => {
+    const BASE_URL = 'https://www.myanonamouse.net/tor/download.php/abc123token';
+    beforeEach(() => {
+      vi.clearAllMocks();
+      settingsMod.readSettings.mockReturnValue({
+        qbittorrent: { url: 'http://qb', username: 'user', password: 'pass' },
+        tags: { enabled: false, available: [], defaults: { books: [], audiobooks: [] } },
+        categories: { enabled: false, defaults: { books: 'books', audiobooks: 'audiobooks' } }
+      });
+    });
+
+    it('appends &fl to the download URL when useWedge is true', async () => {
+      const req = {
+        json: async () => ({
+          title: 'Test Book',
+          downloadUrl: BASE_URL,
           useWedge: true
         })
       };
@@ -138,96 +253,47 @@ describe('add route', () => {
 
       expect(json.ok).toBe(true);
       expect(json.wedgeUsed).toBe(true);
-      expect(wedge.purchaseFlWedge).toHaveBeenCalledWith('12345');
-      // Verify qBittorrent was called after wedge purchase
-      expect(qbittorrent.qbAddUrl).toHaveBeenCalled();
+      const [, , urlPassed] = qbittorrent.qbAddUrl.mock.calls[0];
+      expect(urlPassed).toBe(`${BASE_URL}&fl`);
     });
 
-    it('returns error when wedge purchase fails', async () => {
-      // Mock failed wedge purchase
-      wedge.purchaseFlWedge.mockResolvedValueOnce({
-        success: false,
-        error: 'Not enough wedges',
-        statusCode: 400
-      });
-
+    it('does NOT append &fl when useWedge is false', async () => {
       const req = {
         json: async () => ({
           title: 'Test Book',
-          downloadUrl: 'magnet:?xt=...',
-          torrentId: '12345',
-          useWedge: true
+          downloadUrl: BASE_URL,
+          useWedge: false
         })
       };
 
       const res = await POST(req);
       const json = await res.json();
 
-      expect(json.ok).toBe(false);
-      expect(json.wedgeFailed).toBe(true);
-      expect(json.error).toContain('Not enough wedges');
-      // Should NOT attempt to add torrent to qBittorrent
-      expect(qbittorrent.qbAddUrl).not.toHaveBeenCalled();
+      expect(json.ok).toBe(true);
+      expect(json.wedgeUsed).toBe(false);
+      const [, , urlPassed] = qbittorrent.qbAddUrl.mock.calls[0];
+      expect(urlPassed).toBe(BASE_URL);
     });
 
-    it('does not bust cache when wedge purchase fails', async () => {
-      wedge.purchaseFlWedge.mockResolvedValueOnce({
-        success: false,
-        error: 'Error',
-        statusCode: 400
-      });
-
+    it('does NOT append &fl when useWedge is omitted', async () => {
       const req = {
         json: async () => ({
           title: 'Test Book',
-          downloadUrl: 'magnet:?xt=...',
-          torrentId: '12345',
-          useWedge: true
+          downloadUrl: BASE_URL
         })
       };
 
       await POST(req);
-      expect(userStatsRoute.bustStatsCache).not.toHaveBeenCalled();
+
+      const [, , urlPassed] = qbittorrent.qbAddUrl.mock.calls[0];
+      expect(urlPassed).toBe(BASE_URL);
     });
 
-    it('returns error when wedge response has success=false', async () => {
-      // Mock wedge purchase with success: false
-      wedge.purchaseFlWedge.mockResolvedValueOnce({
-        success: false,
-        error: 'Insufficient bonus points',
-        statusCode: 400
-      });
-
+    it('busts cache after successful FL download', async () => {
       const req = {
         json: async () => ({
           title: 'Test Book',
-          downloadUrl: 'magnet:?xt=...',
-          torrentId: '12345',
-          useWedge: true
-        })
-      };
-
-      const res = await POST(req);
-      const json = await res.json();
-
-      expect(json.ok).toBe(false);
-      expect(json.wedgeFailed).toBe(true);
-      expect(json.error).toBe('Insufficient bonus points');
-      expect(qbittorrent.qbAddUrl).not.toHaveBeenCalled();
-    });
-
-    it('busts cache after successful wedge purchase and download', async () => {
-      // Mock successful wedge purchase
-      wedge.purchaseFlWedge.mockResolvedValueOnce({
-        success: true,
-        torrentId: '12345'
-      });
-
-      const req = {
-        json: async () => ({
-          title: 'Test Book',
-          downloadUrl: 'magnet:?xt=...',
-          torrentId: '12345',
+          downloadUrl: BASE_URL,
           useWedge: true
         })
       };
@@ -237,17 +303,13 @@ describe('add route', () => {
       expect(userStatsRoute.bustStatsCache).toHaveBeenCalledTimes(1);
     });
 
-    it('handles wedge purchase when response has no error message', async () => {
-      wedge.purchaseFlWedge.mockResolvedValueOnce({
-        success: false,
-        statusCode: 500
-      });
+    it('does not bust cache when FL download fails', async () => {
+      qbittorrent.qbAddUrl.mockImplementationOnce(() => { throw new Error('qb error'); });
 
       const req = {
         json: async () => ({
           title: 'Test Book',
-          downloadUrl: 'magnet:?xt=...',
-          torrentId: '12345',
+          downloadUrl: BASE_URL,
           useWedge: true
         })
       };
@@ -256,32 +318,29 @@ describe('add route', () => {
       const json = await res.json();
 
       expect(json.ok).toBe(false);
-      expect(json.wedgeFailed).toBe(true);
-      expect(json.error).toBe('Failed to purchase FL wedge');
+      expect(userStatsRoute.bustStatsCache).not.toHaveBeenCalled();
     });
 
-    it('passes tokenExpired flag from wedge service', async () => {
-      wedge.purchaseFlWedge.mockResolvedValueOnce({
-        success: false,
-        error: 'Token expired',
-        tokenExpired: true,
-        statusCode: 401
+    it('passes correct category with FL URL for audiobooks', async () => {
+      settingsMod.readSettings.mockReturnValue({
+        qbittorrent: { url: 'http://qb', username: 'user', password: 'pass' },
+        tags: { enabled: false, available: [], defaults: { books: [], audiobooks: [] } },
+        categories: { enabled: true, defaults: { books: 'books', audiobooks: 'audiobooks' } }
       });
-
       const req = {
         json: async () => ({
-          title: 'Test Book',
-          downloadUrl: 'magnet:?xt=...',
-          torrentId: '12345',
+          title: 'Test Audiobook',
+          downloadUrl: BASE_URL,
+          category: 'audiobooks',
           useWedge: true
         })
       };
 
-      const res = await POST(req);
-      const json = await res.json();
+      await POST(req);
 
-      expect(json.ok).toBe(false);
-      expect(json.tokenExpired).toBe(true);
+      const [, , urlPassed, optionsPassed] = qbittorrent.qbAddUrl.mock.calls[0];
+      expect(urlPassed).toBe(`${BASE_URL}&fl`);
+      expect(optionsPassed?.category).toBe('audiobooks');
     });
   });
 });

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   buildMamDownloadUrl,
   buildMamTorrentUrl,
+  buildFLDownloadUrl,
   buildPayload,
   formatNumberWithCommas,
   hasM4b,
@@ -14,7 +15,9 @@ import {
   formatBytesToSize,
   calculateNewRatio,
   calculateRatioDiff,
-  generateTimestamp
+  generateTimestamp,
+  thresholdToBytes,
+  shouldAutoApplyWedge
 } from '../src/lib/utilities.js';
 
 describe('utilities', () => {
@@ -27,6 +30,33 @@ describe('utilities', () => {
     expect(buildMamTorrentUrl('456')).toContain('/t/456');
     expect(buildMamTorrentUrl(123)).toContain('/t/123');
     expect(buildMamTorrentUrl()).toBeNull();
+  });
+
+  describe('buildFLDownloadUrl', () => {
+    const VALID_URL = 'https://www.myanonamouse.net/tor/download.php/abc123token';
+
+    it('appends &fl to a valid MAM download URL', () => {
+      expect(buildFLDownloadUrl(VALID_URL)).toBe(`${VALID_URL}&fl`);
+    });
+
+    it('returns null for falsy input', () => {
+      expect(buildFLDownloadUrl(null)).toBeNull();
+      expect(buildFLDownloadUrl('')).toBeNull();
+      expect(buildFLDownloadUrl(undefined)).toBeNull();
+    });
+
+    it('returns null for non-string input', () => {
+      expect(buildFLDownloadUrl(123)).toBeNull();
+      expect(buildFLDownloadUrl({})).toBeNull();
+    });
+
+    it('returns null for magnet links (not a MAM download URL)', () => {
+      expect(buildFLDownloadUrl('magnet:?xt=urn:btih:abc123')).toBeNull();
+    });
+
+    it('returns null for non-MAM URLs', () => {
+      expect(buildFLDownloadUrl('https://example.com/download/file.torrent')).toBeNull();
+    });
   });
 
   // NOTE: this is bound to change as functionality evolves
@@ -418,6 +448,91 @@ describe('utilities', () => {
       // Diff will be negative since ratio decreases when downloading
       expect(diff).toMatch(/^-?\d+\.\d{4}$/);
       expect(diff.split('.')[1].length).toBe(4);
+    });
+  });
+
+  describe('thresholdToBytes', () => {
+    it('converts KB thresholds to bytes', () => {
+      expect(thresholdToBytes({ value: 800, unit: 'KB' })).toBe(800 * 1024);
+    });
+
+    it('converts MB thresholds to bytes', () => {
+      expect(thresholdToBytes({ value: 500, unit: 'MB' })).toBe(500 * 1024 * 1024);
+    });
+
+    it('converts GB thresholds to bytes', () => {
+      expect(thresholdToBytes({ value: 1.5, unit: 'GB' })).toBe(Math.round(1.5 * 1024 * 1024 * 1024));
+    });
+
+    it('returns null when value is null/undefined', () => {
+      expect(thresholdToBytes({ value: null, unit: 'MB' })).toBeNull();
+      expect(thresholdToBytes({ value: undefined, unit: 'MB' })).toBeNull();
+    });
+
+    it('treats zero as a valid threshold (always apply)', () => {
+      expect(thresholdToBytes({ value: 0, unit: 'MB' })).toBe(0);
+    });
+
+    it('returns null for negative or non-numeric values', () => {
+      expect(thresholdToBytes({ value: -5, unit: 'MB' })).toBeNull();
+      expect(thresholdToBytes({ value: 'lots', unit: 'MB' })).toBeNull();
+    });
+
+    it('returns null for an unrecognized unit', () => {
+      expect(thresholdToBytes({ value: 500, unit: 'TB' })).toBeNull();
+    });
+
+    it('returns null for missing/falsy threshold', () => {
+      expect(thresholdToBytes(null)).toBeNull();
+      expect(thresholdToBytes(undefined)).toBeNull();
+    });
+  });
+
+  describe('shouldAutoApplyWedge', () => {
+    const baseParams = {
+      sizeBytes: 600 * 1024 * 1024,
+      thresholdBytes: 500 * 1024 * 1024,
+      vip: false,
+      freeleech: false,
+      snatched: false,
+      wedgesAvailable: true,
+    };
+
+    it('returns true when size meets or exceeds threshold and item is eligible', () => {
+      expect(shouldAutoApplyWedge(baseParams)).toBe(true);
+      expect(shouldAutoApplyWedge({ ...baseParams, sizeBytes: baseParams.thresholdBytes })).toBe(true);
+    });
+
+    it('returns false when size is under threshold', () => {
+      expect(shouldAutoApplyWedge({ ...baseParams, sizeBytes: 100 * 1024 * 1024 })).toBe(false);
+    });
+
+    it('returns false when no threshold is configured for the medium', () => {
+      expect(shouldAutoApplyWedge({ ...baseParams, thresholdBytes: null })).toBe(false);
+    });
+
+    it('returns true for any size when threshold is zero (always apply)', () => {
+      expect(shouldAutoApplyWedge({ ...baseParams, thresholdBytes: 0, sizeBytes: 1 })).toBe(true);
+    });
+
+    it('returns false for a VIP item regardless of size', () => {
+      expect(shouldAutoApplyWedge({ ...baseParams, vip: true })).toBe(false);
+    });
+
+    it('returns false for an already-freeleech item', () => {
+      expect(shouldAutoApplyWedge({ ...baseParams, freeleech: true })).toBe(false);
+    });
+
+    it('returns false for an already-snatched item', () => {
+      expect(shouldAutoApplyWedge({ ...baseParams, snatched: true })).toBe(false);
+    });
+
+    it('returns false when the user has zero wedges available', () => {
+      expect(shouldAutoApplyWedge({ ...baseParams, wedgesAvailable: false })).toBe(false);
+    });
+
+    it('returns false when size is missing', () => {
+      expect(shouldAutoApplyWedge({ ...baseParams, sizeBytes: null })).toBe(false);
     });
   });
 });
