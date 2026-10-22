@@ -1,41 +1,51 @@
 // App configuration
 import "server-only";
 import fs from "node:fs";
-import { MAM_TOKEN_FILE } from "./constants.js";
+import { MAM_TOKEN_FILE, SETTINGS_FILE } from "./constants.js";
 
-function need(name) {
-  const v = process.env[name];
-  if (!v) throw new Error(`Missing env: ${name}`);
-  return v;
+/**
+ * Reads a setting from the settings file, falling back to env var.
+ */
+function fromSettings(path, envName, fallback) {
+  try {
+    if (fs.existsSync(SETTINGS_FILE)) {
+      const settings = JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf8"));
+      const value = path.split(".").reduce((obj, key) => obj?.[key], settings);
+      if (value !== undefined && value !== null && value !== "") {
+        return value;
+      }
+    }
+  } catch {
+    // Fall through to env var
+  }
+  return process.env[envName] || fallback;
 }
 
-function boolEnv(name, defaultValue = false) {
-  const v = process.env[name];
-  if (v == null || v === "") return defaultValue;
-  return ["1", "true", "yes", "on"].includes(String(v).trim().toLowerCase());
+function boolSetting(path, envName, fallback = false) {
+  const value = fromSettings(path, envName, fallback);
+  if (typeof value === "boolean") return value;
+  return ["1", "true", "yes", "on"].includes(String(value).trim().toLowerCase());
 }
 
-function searchCategoryEnv(name, defaultValue = "books") {
-  const v = process.env[name];
-  return ["books", "audiobooks", "both"].includes(v) ? v : defaultValue;
+function searchCategorySetting() {
+  const value = fromSettings("search.defaultCategory", "APP_DEFAULT_SEARCH_CATEGORY", "books");
+  return ["books", "audiobooks", "both"].includes(value) ? value : "books";
 }
-
-const legacyQbCategory = process.env.APP_QB_CATEGORY || "books";
 
 const cfg = {
   appPassword: process.env.APP_PASSWORD || "cheese",
-  qbUrl: need("APP_QB_URL"),
-  qbCategory: legacyQbCategory,
-  qbBookCategory: process.env.APP_QB_BOOK_CATEGORY || legacyQbCategory,
-  qbAudiobookCategory: process.env.APP_QB_AUDIOBOOK_CATEGORY || "audiobooks",
-  qbUser: process.env.APP_QB_USERNAME || "admin",
-  qbPass: process.env.APP_QB_PASSWORD || "adminadmin",
+  get qbUrl() { return fromSettings("qbittorrent.url", "APP_QB_URL", "http://qbittorrent:8080"); },
+  qbCategory: process.env.APP_QB_CATEGORY || "books",
+  get qbBookCategory() { return fromSettings("categories.defaults.books", "APP_QB_BOOK_CATEGORY", process.env.APP_QB_CATEGORY || "books"); },
+  get qbAudiobookCategory() { return fromSettings("categories.defaults.audiobooks", "APP_QB_AUDIOBOOK_CATEGORY", "audiobooks"); },
+  get qbUser() { return fromSettings("qbittorrent.username", "APP_QB_USERNAME", "admin"); },
+  get qbPass() { return fromSettings("qbittorrent.password", "APP_QB_PASSWORD", "adminadmin"); },
   mamUA: process.env.APP_MAM_USER_AGENT || "Scurry/1.0 (+contact)",
   mouseholeEnabled: process.env.MOUSEHOLE_ENABLED === "true",
   mouseholeStateFile: process.env.MOUSEHOLE_STATE_FILE || "secrets/state.json",
-  preferEpubOnly: boolEnv("APP_PREFER_EPUB_ONLY"),
-  preferM4b: boolEnv("APP_PREFER_M4B"),
-  defaultSearchCategory: searchCategoryEnv("APP_DEFAULT_SEARCH_CATEGORY"),
+  get defaultSearchCategory() { return searchCategorySetting(); },
+  get preferEpubOnly() { return boolSetting("search.preferEpubOnly", "APP_PREFER_EPUB_ONLY"); },
+  get preferM4b() { return boolSetting("search.preferM4b", "APP_PREFER_M4B"); },
 };
 
 export function readMamToken() {
@@ -47,7 +57,7 @@ export function readMamToken() {
       } else {
         const state = JSON.parse(fs.readFileSync(stateFile, "utf8"));
         // URL-decode the token from mousehole's format
-        return decodeURIComponent(state.currentCookie);
+        return decodeURIComponent(state.cookie ?? state.currentCookie);
       }
     } catch (err) {
       console.warn("Failed to read from mousehole, falling back to static token:", err.message);
